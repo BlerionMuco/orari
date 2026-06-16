@@ -36,6 +36,20 @@
       "when": 1781553723874,
       "tag": "0004_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781630257913,
+      "tag": "0005_cute_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781630257914,
+      "tag": "0006_core_engine",
+      "breakpoints": true
     }
   ]
 }

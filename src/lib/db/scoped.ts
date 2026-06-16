@@ -1,10 +1,11 @@
 import "server-only";
 import { and, eq, type SQL } from "drizzle-orm";
-import { bookings, resources, services } from "@/db/schema";
+import { bookings, resources, services, timeOff } from "@/db/schema";
 
 // Tenant tables that carry business_id directly. Add a table here to expose its
-// business filter through the scope.
-const TENANT_TABLES = { resources, services, bookings } as const;
+// business filter through the scope. `timeOff` carries business_id so that
+// business-wide closures (resource_id NULL) are still tenant-scoped.
+const TENANT_TABLES = { resources, services, bookings, timeOff } as const;
 export type TenantTable = keyof typeof TENANT_TABLES;
 
 export interface BusinessScope {

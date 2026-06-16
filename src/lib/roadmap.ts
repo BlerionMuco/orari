@@ -22,6 +22,8 @@ export interface RoadmapStats {
 }
 
 export const V1_ROADMAP_UPDATED = "2026-06-16";
+// Core booking engine shipped (getAvailableSlots, booking-creation transaction,
+// timezone/DST) — see docs/v1/booking-engine.md.
 
 export const V1_ROADMAP: RoadmapGroup[] = [
   {
@@ -58,9 +60,9 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Core engine (build slowly, test hardest)",
     items: [
-      { label: "getAvailableSlots() — hours, time-off, buffers, lead time, advance window, rules", status: "todo" },
-      { label: "Booking-creation transaction — re-validate + rely on the exclusion constraint", status: "todo" },
-      { label: "Timezone correctness — UTC storage, business-tz math, DST", status: "todo" },
+      { label: "getAvailableSlots() — hours, time-off, buffers, lead time, advance window, rules", status: "done", note: "pure layered subtraction; split shifts + overnight + buffers; 32 unit tests" },
+      { label: "Booking-creation transaction — re-validate + rely on the exclusion constraint", status: "done", note: "confirm-only; reserved_range EXCLUDE wins the race (23P01); idempotency-key + transactional outbox; verified concurrent" },
+      { label: "Timezone correctness — UTC storage, business-tz math, DST", status: "done", note: "@date-fns/tz; spring-forward gap skipped, fall-back earlier-occurrence, 23/25h days" },
     ],
   },
   {
@@ -101,7 +103,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Notifications & launch plumbing",
     items: [
-      { label: "Inngest jobs — releaseHeldSlot + sendBookingReminder", status: "partial", note: "TODO stubs" },
+      { label: "Inngest jobs — releaseHeldSlot + sendBookingReminder", status: "partial", note: "reminder + outbox drainer wired (drainOutbox re-emits booking/confirmed); releaseHeldSlot still a stub (holds deferred)" },
       { label: "Confirmation email + scheduled reminder (Resend/Postmark + Inngest)", status: "todo" },
       { label: "Transactional email deliverability set up", status: "todo" },
       { label: "Rate limiting on the public unauthenticated surface", status: "todo" },

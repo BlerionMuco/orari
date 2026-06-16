@@ -9,6 +9,9 @@ export const CreateBookingInput = z.object({
   customerPhone: z.string().min(3).max(40),
   customerEmail: z.string().email().optional(),
   notes: z.string().max(2000).optional(),
+  // De-dupes double-submits / retries; the client sends one stable value per
+  // booking attempt. Backed by a unique index on bookings.idempotency_key.
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof CreateBookingInput>;
