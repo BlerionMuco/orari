@@ -5,10 +5,12 @@ import {
   timestamp,
   integer,
   boolean,
+  jsonb,
   pgEnum,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const verticalEnum = pgEnum("vertical", [
   "barber",
@@ -149,18 +151,28 @@ export const workingHours = pgTable(
   (t) => [index("working_hours_resource_idx").on(t.resourceId)],
 );
 
+// A vacation / one-off closure. `resourceId` NULL = business-wide closure
+// (holiday, maintenance), which is why `businessId` is carried directly. The
+// NOT NULL on `businessId` is enforced at the DB level in migration 0006 after a
+// backfill (the ORM types it nullable to keep the additive 0005 migration safe).
 export const timeOff = pgTable(
   "time_off",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    resourceId: uuid("resource_id")
-      .notNull()
-      .references(() => resources.id, { onDelete: "cascade" }),
+    businessId: uuid("business_id").references(() => businesses.id, {
+      onDelete: "cascade",
+    }),
+    resourceId: uuid("resource_id").references(() => resources.id, {
+      onDelete: "cascade",
+    }),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     reason: text("reason"),
   },
-  (t) => [index("time_off_resource_idx").on(t.resourceId)],
+  (t) => [
+    index("time_off_resource_idx").on(t.resourceId),
+    index("time_off_business_idx").on(t.businessId),
+  ],
 );
 
 export const services = pgTable(
@@ -173,6 +185,10 @@ export const services = pgTable(
     name: text("name").notNull(),
     durationMin: integer("duration_min").notNull(),
     priceCents: integer("price_cents").notNull().default(0),
+    // Padding reserved before/after each booking of this service. Snapshotted
+    // onto the booking at creation so the engine and constraint can't drift.
+    beforeBufferMin: integer("before_buffer_min").notNull().default(0),
+    afterBufferMin: integer("after_buffer_min").notNull().default(0),
     active: boolean("active").notNull().default(true),
   },
   (t) => [index("services_business_idx").on(t.businessId)],
@@ -197,12 +213,80 @@ export const bookings = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     status: bookingStatusEnum("status").notNull().default("confirmed"),
+    // Buffers snapshotted from the service at creation; drive `reserved_range`.
+    beforeBufferMin: integer("before_buffer_min").notNull().default(0),
+    afterBufferMin: integer("after_buffer_min").notNull().default(0),
+    // Tokenized manage link (view / cancel / reschedule without an account).
+    manageToken: text("manage_token").notNull(),
+    // De-dupes double-submits; unique, nullable (Postgres treats NULLs distinct).
+    idempotencyKey: text("idempotency_key"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // reserved_range (tstzrange, buffer-inclusive) is trigger-maintained in 0006
+    // and guarded by the bookings_no_overlap EXCLUDE constraint; intentionally
+    // not modeled here — the engine recomputes busy intervals from the buffers.
   },
-  (t) => [index("bookings_resource_starts_idx").on(t.resourceId, t.startsAt)],
+  (t) => [
+    index("bookings_resource_starts_idx").on(t.resourceId, t.startsAt),
+    uniqueIndex("bookings_manage_token_idx").on(t.manageToken),
+    uniqueIndex("bookings_idempotency_key_idx").on(t.idempotencyKey),
+  ],
+);
+
+// Booking rules, scoped by business with an optional per-service override
+// (NULL service_id = the business default). The engine resolves the
+// service-specific row first, then the business default, then code defaults.
+export const bookingRules = pgTable(
+  "booking_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    serviceId: uuid("service_id").references(() => services.id, {
+      onDelete: "cascade",
+    }),
+    leadTimeMin: integer("lead_time_min").notNull().default(120),
+    advanceWindowDays: integer("advance_window_days").notNull().default(60),
+    slotGranularityMin: integer("slot_granularity_min").notNull().default(15),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // One business-default row (service_id NULL); one row per service override.
+    uniqueIndex("booking_rules_business_default_idx")
+      .on(t.businessId)
+      .where(sql`service_id IS NULL`),
+    uniqueIndex("booking_rules_business_service_idx").on(
+      t.businessId,
+      t.serviceId,
+    ),
+  ],
+);
+
+// Transactional outbox: post-commit side effects (confirmation email, reminder
+// scheduling) are written here in the booking's own transaction, then a drainer
+// processes them — so a rollback can't orphan a sent email and a failed send
+// can't roll back the booking.
+export const outbox = pgTable(
+  "outbox",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("outbox_unprocessed_idx")
+      .on(t.processedAt)
+      .where(sql`processed_at IS NULL`),
+  ],
 );
 
 export type Profile = typeof profiles.$inferSelect;
@@ -214,3 +298,5 @@ export type WorkingHours = typeof workingHours.$inferSelect;
 export type TimeOff = typeof timeOff.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type BookingRule = typeof bookingRules.$inferSelect;
+export type OutboxRow = typeof outbox.$inferSelect;

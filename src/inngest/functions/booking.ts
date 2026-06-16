@@ -1,4 +1,4 @@
-import { inngest } from "./client";
+import { inngest } from "../client";
 
 export const releaseHeldSlot = inngest.createFunction(
   {
@@ -25,5 +25,3 @@ export const sendBookingReminder = inngest.createFunction(
     return { ok: true, bookingId: event.data.bookingId };
   },
 );
-
-export const functions = [releaseHeldSlot, sendBookingReminder];
