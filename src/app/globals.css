@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  Color tokens — see /docs/theme.md for the full system.
+  Tailwind v4 reads every --color-* CSS var inside @theme and produces
+  bg-*, text-*, border-*, ring-*, fill-*, stroke-* utilities automatically.
+*/
+@theme {
+  /* Neutrals */
+  --color-surface: #ffffff;
+  --color-bg: #fafaf9;
+  --color-fill-subtle: #f1efe8;
+  --color-border: #e7e5e1;
+  --color-border-strong: #d3d1c7;
+  --color-text-disabled: #b4b2a9;
+  --color-text-muted: #6b6b63;
+  --color-text: #1a1a17;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Brand — indigo */
+  --color-primary-tint: #ecedfb;
+  --color-primary-tint-hover: #dadbf7;
+  --color-primary: #5b5fc7;
+  --color-primary-hover: #4a4eb5;
+  --color-primary-pressed: #3d3f94;
+
+  /* Focus ring — always brand indigo at 20% opacity */
+  --color-focus: rgba(91, 95, 199, 0.2);
+
+  /* Semantic — success */
+  --color-success: #1d9e75;
+  --color-success-bg: #e1f5ee;
+  --color-success-text: #0f6e56;
+
+  /* Semantic — warning */
+  --color-warning: #ef9f27;
+  --color-warning-bg: #faeeda;
+  --color-warning-text: #854f0b;
+
+  /* Semantic — danger */
+  --color-danger: #e24b4a;
+  --color-danger-bg: #fcebeb;
+  --color-danger-text: #a32d2d;
+
+  /* Semantic — info (intentionally reuses brand indigo) */
+  --color-info: #5b5fc7;
+  --color-info-bg: #ecedfb;
+  --color-info-text: #3d3f94;
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Elevation — the raised auth/card shadow */
+  --shadow-card: 0 1px 2px rgba(26, 26, 23, 0.04),
+    0 14px 34px -14px rgba(26, 26, 23, 0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/*
+  No dark-mode tokens in V1 — the system is light-only by design.
+  When a dark scheme is added later, override the vars inside
+  a @media (prefers-color-scheme: dark) block or a [data-theme="dark"] selector.
+*/
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
