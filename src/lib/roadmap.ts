@@ -68,7 +68,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Onboarding",
     items: [
-      { label: "Onboarding wizard shell with step progress", status: "partial", note: "2-step wizard built; creates business via create_business RPC" },
+      { label: "Onboarding wizard shell with step progress", status: "partial", note: "2-step wizard built; creates business via create_business RPC, which also seeds the business-default booking_rules row (0007)" },
       { label: "Steps: profile → vertical → service → resource → hours → go-live (slug + URL)", status: "partial", note: "basics + team/owner-is-resource done; service, hours, go-live URL remain" },
     ],
   },

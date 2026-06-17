@@ -7,8 +7,10 @@ export const MINUTES_PER_DAY = 1440;
 // min(business advance window, this).
 export const MAX_AVAILABILITY_RANGE_DAYS = 60;
 
-// Fallback when a business has no booking_rules row yet (onboarding doesn't
-// create one — see booking-engine.md).
+// Safety fallback for a business with no booking_rules row. create_business
+// seeds the business-default row (migration 0007), so in normal operation this
+// is never hit — resolveRules warns if it is. Values MUST stay in sync with the
+// booking_rules column defaults; the parity test in __tests__ enforces it.
 export const DEFAULT_BOOKING_RULES: BookingRules = {
   slotGranularityMin: 15,
   leadTimeMin: 120,
