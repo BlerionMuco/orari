@@ -92,3 +92,10 @@ The first phase sets the layout every later feature must follow. Put new code wh
 
 ### Tests
 - Colocate tests in a `__tests__/` folder next to the code. `*.test.ts` = pure unit tests (no DB, run by default). `*.integration.test.ts` = DB-touching, gated behind `RUN_DB_TESTS` and pointed at a throwaway Postgres; they must create isolated fixtures and tear them down.
+
+### Git + Github
+
+- Every commit should have a clear, descriptive message.
+- Use feature branches and pull requests for all changes.
+- Review all changes via pull requests before merging.
+- Every commit should include only me as the author. Username: `Blerion Muco` Email: orari.albania@gmail.com
