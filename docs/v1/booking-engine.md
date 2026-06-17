@@ -114,7 +114,7 @@ Vitest resolves `@/` and stubs `server-only` (see `vitest.config.ts`).
 
 ## 8. What's left / follow-ups
 
-- **Seed before manual use:** onboarding doesn't create services / working_hours / a `booking_rules` row yet, so the engine falls back to `DEFAULT_BOOKING_RULES`. Wire a default-rules insert into `create_business`, and add the service/hours onboarding steps. `pnpm tsx src/db/seeds/booking.ts` seeds the existing business for manual testing.
+- **Default booking rules — done (0007):** `create_business` now seeds the business-default `booking_rules` row (`service_id NULL`) in the same transaction, and migration `0007` backfills businesses created earlier. `resolveRules` warns if it ever still falls back to `DEFAULT_BOOKING_RULES` (invariant violation). Still missing from onboarding: the **service / working-hours** steps — until those exist, `pnpm tsx src/db/seeds/booking.ts` seeds a usable business for manual testing.
 - **Outbox drainer is a re-emitter** — it sends `booking/confirmed`; the actual confirmation email + reminder delivery land with the notifications phase.
 - **Service↔resource capability** mapping deferred (V1 = one resource; the engine takes candidate `resources[]` so it's a localized add).
 - **RLS** on `booking_rules` / `outbox` only needed if reached by the browser/anon path (the engine uses the privileged Drizzle client).

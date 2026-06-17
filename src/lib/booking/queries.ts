@@ -43,7 +43,15 @@ export async function resolveRules(
   const forService = rows.find((r) => r.serviceId === serviceId);
   const businessDefault = rows.find((r) => r.serviceId === null);
   const chosen = forService ?? businessDefault;
-  if (!chosen) return DEFAULT_BOOKING_RULES;
+  if (!chosen) {
+    // create_business seeds a business-default row, so reaching here means the
+    // invariant was bypassed (business inserted outside the RPC) — not normal.
+    console.warn(
+      `booking_rules missing for business ${businessId} (service ${serviceId}) — ` +
+        `using DEFAULT_BOOKING_RULES (invariant violation)`,
+    );
+    return DEFAULT_BOOKING_RULES;
+  }
   return {
     slotGranularityMin: chosen.slotGranularityMin,
     leadTimeMin: chosen.leadTimeMin,
