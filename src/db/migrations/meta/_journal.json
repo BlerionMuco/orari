@@ -57,6 +57,13 @@
       "when": 1781630257915,
       "tag": "0007_seed_default_booking_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781799565267,
+      "tag": "0008_magical_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }

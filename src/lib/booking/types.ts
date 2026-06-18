@@ -62,6 +62,22 @@ export interface SlotValidationResult {
   reason?: SlotRejectionReason;
 }
 
+// --- Public API DTOs (serialized, client-safe) ---
+// What the availability route returns and the wizard fetches. Instants are ISO
+// strings (the engine's `Slot.startUtc` Date serialized); never raw DB rows.
+// `startUtc` is the canonical instant the client submits back verbatim.
+export interface AvailabilitySlot {
+  startUtc: string;
+  endUtc: string;
+  isoDate: string; // business-local "YYYY-MM-DD"
+  localTimeLabel: string; // business-local "HH:mm"
+}
+
+export interface AvailabilityResponse {
+  timezone: string; // IANA; rendered via formatTimezoneLabel on the client
+  slots: AvailabilitySlot[];
+}
+
 // Inputs to validate a single proposed start (used by create-booking).
 export interface SlotValidationInput {
   resourceId: string;
