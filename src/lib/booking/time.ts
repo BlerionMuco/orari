@@ -127,6 +127,21 @@ export function localIsoDate(utc: Date, timeZone: string): string {
   return toIsoDate(p.year, p.month, p.day);
 }
 
+// Friendly, customer-facing timezone label ("Tirana time") — never the raw IANA
+// id ("Europe/Tirane"). Known zones get a curated city; otherwise the last path
+// segment is humanized (underscores → spaces). The engine still stores/computes
+// in the IANA zone — this is display only.
+const TZ_CITY_LABELS: Record<string, string> = {
+  "Europe/Tirane": "Tirana",
+};
+
+export function formatTimezoneLabel(ianaId: string): string {
+  const curated = TZ_CITY_LABELS[ianaId];
+  const city =
+    curated ?? ianaId.split("/").pop()?.replace(/_/g, " ") ?? ianaId;
+  return `${city} time`;
+}
+
 // Add (or subtract) whole calendar days to a "YYYY-MM-DD" string. Pure calendar
 // math in UTC, so DST never shifts the result.
 export function addDaysToIsoDate(isoDate: string, days: number): string {

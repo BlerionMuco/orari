@@ -3,9 +3,16 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { businesses } from "@/db/schema";
-import { getAvailableSlots } from "@/lib/booking/get-available-slots";
+import {
+  getAvailableSlots,
+  getUnionAvailability,
+} from "@/lib/booking/get-available-slots";
 import { MAX_AVAILABILITY_RANGE_DAYS } from "@/lib/booking/constants";
-import { addDaysToIsoDate } from "@/lib/booking/time";
+import { addDaysToIsoDate, localIsoDate } from "@/lib/booking/time";
+import type {
+  AvailabilitySlot,
+  AvailabilityResponse,
+} from "@/lib/booking/types";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -13,25 +20,22 @@ const QuerySchema = z
   .object({
     orgSlug: z.string().min(1).optional(),
     businessId: z.string().uuid().optional(),
-    resourceId: z.string().uuid(),
+    // Optional: present → single-resource availability; absent → union of all
+    // active resources ("Any available").
+    resourceId: z.string().uuid().optional(),
     serviceId: z.string().uuid(),
-    from: z.string().regex(ISO_DATE),
+    // Optional: the lower bound is server-owned (business-local today) when the
+    // client omits it — invariant 3, no client date math.
+    from: z.string().regex(ISO_DATE).optional(),
     to: z.string().regex(ISO_DATE),
   })
   .refine((q) => Boolean(q.orgSlug || q.businessId), {
     message: "orgSlug or businessId is required",
   });
 
-interface SlotResponse {
-  startUtc: string;
-  endUtc: string;
-  isoDate: string;
-  localTimeLabel: string;
-}
-
-// Public, unauthenticated availability read. Tenancy is enforced inside
-// getAvailableSlots (businessScope). The range is clamped so an anonymous
-// request can't ask for a multi-year span and burn CPU.
+// Public, unauthenticated availability read. Tenancy is enforced inside the
+// engine (businessScope). The range is clamped so an anonymous request can't ask
+// for a multi-year span and burn CPU.
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const parsed = QuerySchema.safeParse(params);
@@ -40,46 +44,52 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   const q = parsed.data;
 
-  let businessId = q.businessId;
-  if (!businessId && q.orgSlug) {
-    const [row] = await db
-      .select({ id: businesses.id })
-      .from(businesses)
-      .where(eq(businesses.slug, q.orgSlug))
-      .limit(1);
-    if (!row) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
-    }
-    businessId = row.id;
-  }
-  if (!businessId) {
+  // Resolve {id, timezone} from either businessId or slug. Timezone is needed to
+  // default an omitted `from` to business-local today. Kept lightweight (no
+  // location parse) — this path is cached and hot.
+  const where = q.businessId
+    ? eq(businesses.id, q.businessId)
+    : eq(businesses.slug, q.orgSlug ?? "");
+  const [business] = await db
+    .select({ id: businesses.id, timezone: businesses.timezone })
+    .from(businesses)
+    .where(where)
+    .limit(1);
+  if (!business) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // Clamp the span: never start after end, never exceed the CPU cap. The booking
-  // rules' advance window is enforced inside the engine.
-  const from = q.from;
+  // Server owns the lower bound; clamp the span (never start after end, never
+  // exceed the CPU cap). The advance window is enforced inside the engine.
+  const from = q.from ?? localIsoDate(new Date(), business.timezone);
   let to = q.to < from ? from : q.to;
   const maxTo = addDaysToIsoDate(from, MAX_AVAILABILITY_RANGE_DAYS);
   if (to > maxTo) to = maxTo;
 
-  const result = await getAvailableSlots({
-    businessId,
-    resourceId: q.resourceId,
-    serviceId: q.serviceId,
-    rangeStartDate: from,
-    rangeEndDate: to,
-  });
+  const result = q.resourceId
+    ? await getAvailableSlots({
+        businessId: business.id,
+        resourceId: q.resourceId,
+        serviceId: q.serviceId,
+        rangeStartDate: from,
+        rangeEndDate: to,
+      })
+    : await getUnionAvailability({
+        businessId: business.id,
+        serviceId: q.serviceId,
+        rangeStartDate: from,
+        rangeEndDate: to,
+      });
 
-  const slots: SlotResponse[] = result.slots.map((s) => ({
+  const slots: AvailabilitySlot[] = result.slots.map((s) => ({
     startUtc: s.startUtc.toISOString(),
     endUtc: s.endUtc.toISOString(),
     isoDate: s.isoDate,
     localTimeLabel: s.localTimeLabel,
   }));
 
-  return NextResponse.json(
-    { timezone: result.timezone, slots },
-    { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } },
-  );
+  const body: AvailabilityResponse = { timezone: result.timezone, slots };
+  return NextResponse.json(body, {
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+  });
 }

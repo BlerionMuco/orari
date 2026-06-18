@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import type { Location } from "@/lib/schemas/business";
 
 export const verticalEnum = pgEnum("vertical", [
   "barber",
@@ -61,6 +62,16 @@ export const businesses = pgTable(
     name: text("name").notNull(),
     vertical: verticalEnum("vertical").notNull(),
     timezone: text("timezone").notNull().default("Europe/Tirane"),
+    // Public-profile fields — surfaced on the booking page, edited later in the
+    // dashboard (not collected at onboarding). All nullable except `currency`.
+    description: text("description"),
+    logoUrl: text("logo_url"),
+    phone: text("phone"),
+    // ISO-4217 code; drives `formatPrice`. Intentionally independent of
+    // `location.countryCode` — a business may bill in EUR while located in AL.
+    currency: text("currency").notNull().default("ALL"),
+    // One typed place per business; validated by LocationSchema on every read.
+    location: jsonb("location").$type<Location>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

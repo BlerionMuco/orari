@@ -1,21 +1,32 @@
 import "server-only";
-import { db } from "@/db/client";
-import { bookings, outbox, type Booking } from "@/db/schema";
 import type { CreateBookingInput } from "@/lib/schemas/booking";
+import { normalizePhone } from "@/lib/business/phone";
 import { MINUTES_PER_DAY } from "./constants";
 import { validateSlot } from "./availability";
+import { insertConfirmedBooking } from "./book-insert";
+import { isPgError, pgConstraintName } from "./pg-errors";
 import {
   findByIdempotencyKey,
+  getResourceById,
   loadBusyIntervals,
   loadResourceContext,
   loadWorkingWindows,
 } from "./queries";
+import type { Booking } from "@/db/schema";
 
 export type CreateBookingFailureCode =
   | "not-found"
+  | "invalid-phone"
   | "slot-unavailable"
   | "slot-taken"
   | "unknown";
+
+// The assigned resource, echoed back so the confirmation can name the barber
+// (essential for "Any available", where the client didn't pick one).
+export interface AssignedResource {
+  id: string;
+  name: string;
+}
 
 export interface CreateBookingSuccess {
   ok: true;
@@ -23,6 +34,7 @@ export interface CreateBookingSuccess {
   manageToken: string;
   startsAt: Date;
   endsAt: Date;
+  resource: AssignedResource;
 }
 
 export interface CreateBookingFailure {
@@ -33,30 +45,31 @@ export interface CreateBookingFailure {
 
 export type CreateBookingResult = CreateBookingSuccess | CreateBookingFailure;
 
-function isPgError(e: unknown): e is { code: string } {
-  return e instanceof Error && "code" in e;
-}
-
-// Postgres returns the violated constraint's name. postgres-js spells it
-// `constraint_name`; read both spellings defensively so the disambiguation is
-// robust to the driver.
-function pgConstraintName(e: unknown): string {
-  if (e && typeof e === "object") {
-    const rec = e as Record<string, unknown>;
-    const v = rec.constraint_name ?? rec.constraint;
-    if (typeof v === "string") return v;
-  }
-  return "";
-}
-
-function success(b: Booking): CreateBookingSuccess {
+export function success(
+  b: Booking,
+  resource: AssignedResource,
+): CreateBookingSuccess {
   return {
     ok: true,
     bookingId: b.id,
     manageToken: b.manageToken,
     startsAt: b.startsAt,
     endsAt: b.endsAt,
+    resource,
   };
+}
+
+// Idempotent replay path: rebuild the success result for an already-stored
+// booking, resolving its assigned resource's name for the confirmation.
+export async function replaySuccess(
+  businessId: string,
+  existing: Booking,
+): Promise<CreateBookingSuccess> {
+  const r = await getResourceById(businessId, existing.resourceId);
+  return success(existing, {
+    id: existing.resourceId,
+    name: r?.name ?? "",
+  });
 }
 
 // Create a confirmed booking. Re-derives the end and buffers server-side,
@@ -74,7 +87,17 @@ export async function createBooking(
       input.businessId,
       input.idempotencyKey,
     );
-    if (existing) return success(existing);
+    if (existing) return replaySuccess(input.businessId, existing);
+  }
+
+  // This path books a specific resource. "Any available" (no resourceId) is the
+  // separate createAnyBooking orchestration; the action routes to it.
+  if (!input.resourceId) {
+    return {
+      ok: false,
+      code: "not-found",
+      error: "This service is no longer available.",
+    };
   }
 
   const ctx = await loadResourceContext(
@@ -92,6 +115,19 @@ export async function createBooking(
 
   const { business, resource, service, rules } = ctx;
   const timeZone = business.timezone;
+
+  const phone = normalizePhone(
+    input.customerPhone,
+    business.location?.countryCode ?? "AL",
+  );
+  if (!phone.valid) {
+    return {
+      ok: false,
+      code: "invalid-phone",
+      error: "Enter a valid phone number.",
+    };
+  }
+
   const startsAt = input.startsAt;
   const endsAt = new Date(startsAt.getTime() + service.durationMin * 60_000);
   const now = new Date();
@@ -129,40 +165,28 @@ export async function createBooking(
     };
   }
 
+  const assigned: AssignedResource = { id: resource.id, name: resource.name };
+
   // Up to two attempts so a cosmetic manage_token collision can regenerate.
   for (let attempt = 0; attempt < 2; attempt++) {
-    const manageToken = crypto.randomUUID();
     try {
-      const bookingId = await db.transaction(async (tx) => {
-        const [row] = await tx
-          .insert(bookings)
-          .values({
-            businessId: business.id,
-            resourceId: resource.id,
-            serviceId: service.id,
-            customerName: input.customerName,
-            customerPhone: input.customerPhone,
-            customerEmail: input.customerEmail ?? null,
-            startsAt,
-            endsAt,
-            status: "confirmed",
-            beforeBufferMin: service.beforeBufferMin,
-            afterBufferMin: service.afterBufferMin,
-            manageToken,
-            idempotencyKey: input.idempotencyKey ?? null,
-            notes: input.notes ?? null,
-          })
-          .returning({ id: bookings.id });
-
-        await tx.insert(outbox).values({
-          type: "booking_confirmed",
-          payload: { bookingId: row.id, startsAt: startsAt.toISOString() },
-        });
-
-        return row.id;
+      const row = await insertConfirmedBooking({
+        businessId: business.id,
+        resourceId: resource.id,
+        serviceId: service.id,
+        customerName: input.customerName,
+        customerPhone: phone.e164,
+        customerEmail: input.customerEmail ?? null,
+        startsAt,
+        endsAt,
+        beforeBufferMin: service.beforeBufferMin,
+        afterBufferMin: service.afterBufferMin,
+        manageToken: crypto.randomUUID(),
+        idempotencyKey: input.idempotencyKey ?? null,
+        notes: input.notes ?? null,
       });
 
-      return { ok: true, bookingId, manageToken, startsAt, endsAt };
+      return success(row, assigned);
     } catch (e) {
       if (isPgError(e) && e.code === "23P01") {
         return {
@@ -178,7 +202,7 @@ export async function createBooking(
           const existing = input.idempotencyKey
             ? await findByIdempotencyKey(business.id, input.idempotencyKey)
             : null;
-          if (existing) return success(existing);
+          if (existing) return success(existing, assigned);
         } else if (constraint.includes("manage_token")) {
           continue; // regenerate and retry
         }

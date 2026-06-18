@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const CreateBookingInput = z.object({
   businessId: z.string().uuid(),
-  resourceId: z.string().uuid(),
+  // Optional: present = book this specific resource; omitted = "Any available"
+  // (the server assigns a concrete free resource). The action branches on it.
+  resourceId: z.string().uuid().optional(),
   serviceId: z.string().uuid(),
   startsAt: z.coerce.date(),
   customerName: z.string().min(1).max(120),
@@ -15,3 +17,9 @@ export const CreateBookingInput = z.object({
 });
 
 export type CreateBookingInput = z.infer<typeof CreateBookingInput>;
+
+export const CancelBookingInput = z.object({
+  manageToken: z.string().min(1),
+});
+
+export type CancelBookingInput = z.infer<typeof CancelBookingInput>;
