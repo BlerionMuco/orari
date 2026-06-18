@@ -21,9 +21,12 @@ export interface RoadmapStats {
   percent: number;
 }
 
-export const V1_ROADMAP_UPDATED = "2026-06-16";
+export const V1_ROADMAP_UPDATED = "2026-06-18";
 // Core booking engine shipped (getAvailableSlots, booking-creation transaction,
-// timezone/DST) — see docs/v1/booking-engine.md.
+// timezone/DST) — see docs/v1/booking-engine.md. Multi-resource extension
+// shipped (feature 4, milestone 1): union availability + server-side "any
+// available" assignment + cancel mutation. Public booking UI still pending
+// (milestones 2–4); Public-booking-surface items stay todo until then.
 
 export const V1_ROADMAP: RoadmapGroup[] = [
   {
@@ -130,7 +133,9 @@ export const V1_ROADMAP: RoadmapGroup[] = [
 
 export const V1_OUT_OF_SCOPE: string[] = [
   "Drag calendar",
-  "Multiple resources/staff per business",
+  // NOTE: multi-resource/staff per business is now IN V1 (feature 4) — the
+  // engine unions resources and assigns "any available". Per-resource service
+  // menus remain out (any active resource does any active service).
   "Customer accounts",
   "Public-page editor",
   "Analytics dashboards",
