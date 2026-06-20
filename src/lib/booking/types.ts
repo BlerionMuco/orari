@@ -75,6 +75,10 @@ export interface AvailabilitySlot {
 
 export interface AvailabilityResponse {
   timezone: string; // IANA; rendered via formatTimezoneLabel on the client
+  // Server-owned date window (business-local "YYYY-MM-DD"). The client builds the
+  // day strip from these instead of computing dates itself (invariant 3).
+  rangeStartDate: string;
+  rangeEndDate: string;
   slots: AvailabilitySlot[];
 }
 

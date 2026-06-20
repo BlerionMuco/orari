@@ -22,9 +22,11 @@ import {
   bookingRules,
   bookings,
   outbox,
+  BookingStatus,
 } from "@/db/schema";
 import { getAvailableSlots } from "@/lib/booking/get-available-slots";
 import { createBooking } from "@/lib/booking/create-booking";
+import { BookingFailureCode } from "@/lib/booking/booking-codes";
 import { addDaysToIsoDate, localIsoDate } from "@/lib/booking/time";
 import type { Slot } from "@/lib/booking/types";
 
@@ -95,7 +97,7 @@ describe.skipIf(!RUN)("create-booking (integration)", () => {
     const result = await getAvailableSlots({
       businessId,
       resourceId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });
@@ -114,7 +116,7 @@ describe.skipIf(!RUN)("create-booking (integration)", () => {
     return {
       businessId,
       resourceId,
-      serviceId,
+      serviceIds: [serviceId],
       startsAt: slot.startUtc,
       customerName: "Test Customer",
       customerPhone: "+355690000000",
@@ -131,7 +133,7 @@ describe.skipIf(!RUN)("create-booking (integration)", () => {
       .select()
       .from(bookings)
       .where(eq(bookings.id, res.bookingId));
-    expect(row.status).toBe("confirmed");
+    expect(row.status).toBe(BookingStatus.CONFIRMED);
     expect(row.endsAt.getTime() - row.startsAt.getTime()).toBe(30 * 60_000);
 
     const out = await db
@@ -156,7 +158,7 @@ describe.skipIf(!RUN)("create-booking (integration)", () => {
     expect(ok.ok).toBe(true);
     const again = await createBooking(input(slots[2]));
     expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.code).toBe("slot-unavailable");
+    if (!again.ok) expect(again.code).toBe(BookingFailureCode.SLOT_UNAVAILABLE);
   });
 
   it("allows adjacent zero-buffer slots (half-open)", async () => {
@@ -172,7 +174,7 @@ describe.skipIf(!RUN)("create-booking (integration)", () => {
     if (!first.ok) return;
     await db
       .update(bookings)
-      .set({ status: "cancelled" })
+      .set({ status: BookingStatus.CANCELLED })
       .where(eq(bookings.id, first.bookingId));
     const second = await createBooking(input(slots[5]));
     expect(second.ok).toBe(true);

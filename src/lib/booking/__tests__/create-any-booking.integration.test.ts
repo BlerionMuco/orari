@@ -15,8 +15,10 @@ import {
   bookingRules,
   bookings,
   outbox,
+  BookingStatus,
 } from "@/db/schema";
 import { createAnyBooking } from "@/lib/booking/create-any-booking";
+import { BookingFailureCode } from "@/lib/booking/booking-codes";
 import {
   getAvailableSlots,
   getUnionAvailability,
@@ -109,7 +111,7 @@ describe.skipIf(!RUN)("createAnyBooking (integration)", () => {
   function anyInput(startsAt: Date, idempotencyKey?: string) {
     return {
       businessId,
-      serviceId,
+      serviceIds: [serviceId],
       startsAt,
       customerName: "Test Customer",
       customerPhone: "+355690000000",
@@ -120,7 +122,7 @@ describe.skipIf(!RUN)("createAnyBooking (integration)", () => {
   async function unionStartAt(index: number): Promise<Date> {
     const { slots } = await getUnionAvailability({
       businessId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });
@@ -141,7 +143,7 @@ describe.skipIf(!RUN)("createAnyBooking (integration)", () => {
       .from(bookings)
       .where(eq(bookings.id, res.bookingId));
     expect(row.resourceId).toBe(res.resource.id);
-    expect(row.status).toBe("confirmed");
+    expect(row.status).toBe(BookingStatus.CONFIRMED);
   }, 20_000);
 
   it("spreads two same-time bookings across both resources, then slot-taken", async () => {
@@ -160,7 +162,7 @@ describe.skipIf(!RUN)("createAnyBooking (integration)", () => {
       );
     }
     expect(third.ok).toBe(false);
-    if (!third.ok) expect(third.code).toBe("slot-taken");
+    if (!third.ok) expect(third.code).toBe(BookingFailureCode.SLOT_TAKEN);
   }, 20_000);
 
   it("is idempotent for a repeated key — one booking, never a second barber", async () => {
@@ -268,7 +270,7 @@ describe.skipIf(!RUN)("getUnionAvailability (integration)", () => {
   it("reflects each resource's own hours (not a merged calendar)", async () => {
     const { slots } = await getUnionAvailability({
       businessId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });
@@ -280,7 +282,7 @@ describe.skipIf(!RUN)("getUnionAvailability (integration)", () => {
     const aOnly = await getAvailableSlots({
       businessId,
       resourceId: resourceAId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });
@@ -294,7 +296,7 @@ describe.skipIf(!RUN)("getUnionAvailability (integration)", () => {
       .where(eq(resources.id, resourceBId));
     const { slots } = await getUnionAvailability({
       businessId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });

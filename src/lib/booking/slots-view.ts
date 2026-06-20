@@ -30,6 +30,43 @@ export function groupSlotsByDay(slots: AvailabilitySlot[]): DaySlots[] {
     }));
 }
 
+export type PartOfDay = "Morning" | "Afternoon" | "Evening";
+
+export interface SlotGroup {
+  title: PartOfDay;
+  slots: AvailabilitySlot[];
+}
+
+// Business-local hour → part of day. Morning < 12:00, Afternoon < 17:00, else
+// Evening (mirrors the design's Morning/Afternoon/Evening grouping).
+export function partOfDay(localHour: number): PartOfDay {
+  if (localHour < 12) return "Morning";
+  if (localHour < 17) return "Afternoon";
+  return "Evening";
+}
+
+const PART_ORDER: readonly PartOfDay[] = ["Morning", "Afternoon", "Evening"];
+
+// Group ONE day's slots into Morning/Afternoon/Evening (in that order, empty
+// parts omitted), each ordered by start instant. The hour is read from the
+// business-local label, not recomputed from the instant (invariant 2).
+export function groupSlotsByPartOfDay(slots: AvailabilitySlot[]): SlotGroup[] {
+  const byPart = new Map<PartOfDay, AvailabilitySlot[]>();
+  for (const slot of slots) {
+    const hour = Number(slot.localTimeLabel.slice(0, 2));
+    const part = partOfDay(hour);
+    const bucket = byPart.get(part);
+    if (bucket) bucket.push(slot);
+    else byPart.set(part, [slot]);
+  }
+  return PART_ORDER.filter((p) => byPart.has(p)).map((title) => ({
+    title,
+    slots: [...(byPart.get(title) ?? [])].sort((a, b) =>
+      a.startUtc < b.startUtc ? -1 : a.startUtc > b.startUtc ? 1 : 0,
+    ),
+  }));
+}
+
 // Currency-aware price rendering for amounts stored as MINOR units (see the
 // `price_cents` reinterpretation). Deterministic (no Intl, so tests don't drift
 // across ICU versions). Unknown currencies fall back to 2 decimals + the code.

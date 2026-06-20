@@ -9,6 +9,18 @@ Correctness is not optional. Do not guess at APIs, prop names, types, or behavio
 - Never use `any`. This includes `as any` casts and implicit `any` from untyped parameters. When a type is genuinely unknown, use `unknown` and narrow it before use.
 - Types must be explicit and readable, not clever. Annotate function return types. Prefer plain, named types and interfaces over deeply nested conditional, mapped, or inferred type gymnastics. If a type is hard to read at a glance, simplify it.
 - Assume `strict` mode is on. No suppressing errors with `@ts-ignore` or `@ts-expect-error` unless accompanied by a comment explaining why.
+- No magic string/number literals for domain enumerations. A value that names a fixed set — wizard steps, statuses, roles, failure codes — is defined **once** as a named constant and referenced everywhere by name (`Step.CONFIRMATION`, `WizardStatus.BOOKED`), never typed inline as a bare `"confirmation"` / `"booked"`. Define it as an `as const` object with the union type derived from it, so you get dotted access **and** keep the literal-union type (Zod, DB enum mirrors, and exhaustive `switch`/`never` defaults all keep working). Prefer this over TS `enum`. Example:
+
+  ```ts
+  export const Step = {
+    SERVICE: "service",
+    RESOURCE: "resource",
+    TIME: "time",
+    DETAILS: "details",
+    CONFIRMATION: "confirmation",
+  } as const;
+  export type Step = (typeof Step)[keyof typeof Step];
+  ```
 
 ## Styling
 
