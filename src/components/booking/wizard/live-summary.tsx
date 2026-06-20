@@ -20,7 +20,7 @@ export function LiveSummary(): React.JSX.Element {
       {railRows.map((row) => (
         <div
           key={row.label}
-          className="flex items-start justify-between gap-3.5 border-b border-fill-subtle py-[11px]"
+          className="flex items-start justify-between gap-3.5 border-b border-fill-subtle py-2.75"
         >
           <span className="flex-none text-[13px] text-text-muted">
             {row.label}
@@ -36,8 +36,8 @@ export function LiveSummary(): React.JSX.Element {
           {total}
         </span>
       </div>
-      <div className="flex items-center gap-2 rounded-[11px] bg-fill-subtle px-[13px] py-[11px]">
-        <Lock className="h-[15px] w-[15px] flex-none text-primary" strokeWidth={1.9} />
+      <div className="flex items-center gap-2 rounded-[11px] bg-fill-subtle px-3.25 py-2.75">
+        <Lock className="h-3.75 w-3.75 flex-none text-primary" strokeWidth={1.9} />
         <span className="text-[12px] leading-[1.4] text-text-muted">
           No account needed · Pay in person.
         </span>

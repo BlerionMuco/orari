@@ -9,6 +9,7 @@ import {
   VERTICALS,
   VERTICAL_LABELS,
 } from "@/lib/schemas/onboarding";
+import { Vertical } from "@/lib/business/labels";
 import { createBusinessAction } from "@/app/onboarding/actions";
 import { Field } from "@/components/ui/form/field";
 import { Input } from "@/components/ui/form/input";
@@ -40,7 +41,7 @@ export function OnboardingWizard(): React.JSX.Element {
     resolver: zodResolver(OnboardingInput),
     defaultValues: {
       name: "",
-      vertical: "barber",
+      vertical: Vertical.BARBER,
       timezone: "Europe/Tirane",
       ownerIsResource: true,
       team: [],
@@ -94,7 +95,7 @@ export function OnboardingWizard(): React.JSX.Element {
             control={control}
             name="vertical"
             render={({ field }) => (
-              <div className="flex flex-col gap-[7px]">
+              <div className="flex flex-col gap-1.75">
                 <Label htmlFor="vertical">Type of business</Label>
                 <div className="grid grid-cols-2 gap-2" id="vertical">
                   {VERTICALS.map((value) => {
@@ -122,12 +123,12 @@ export function OnboardingWizard(): React.JSX.Element {
             )}
           />
 
-          <div className="flex flex-col gap-[7px]">
+          <div className="flex flex-col gap-1.75">
             <Label htmlFor="timezone">Timezone</Label>
             <select
               id="timezone"
               className={cn(
-                "h-[46px] w-full rounded-[11px] border border-border bg-surface px-3 text-base text-text",
+                "h-11.5 w-full rounded-[11px] border border-border bg-surface px-3 text-base text-text",
                 "focus:outline-hidden focus:border-primary focus:ring-[3px] focus:ring-focus",
               )}
               {...register("timezone")}
@@ -155,9 +156,9 @@ export function OnboardingWizard(): React.JSX.Element {
             control={control}
             name="ownerIsResource"
             render={({ field }) => (
-              <label className="flex min-h-11 cursor-pointer items-start gap-[9px] text-[14px] leading-[1.45] text-text">
+              <label className="flex min-h-11 cursor-pointer items-start gap-2.25 text-[14px] leading-[1.45] text-text">
                 <Checkbox
-                  className="mt-[3px]"
+                  className="mt-0.75"
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                 />

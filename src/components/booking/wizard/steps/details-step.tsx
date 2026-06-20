@@ -22,6 +22,9 @@ export function DetailsStep(): React.JSX.Element {
     if ("phone" in patch && errors.phone) {
       setErrors({ ...errors, phone: undefined });
     }
+    if ("email" in patch && errors.email) {
+      setErrors({ ...errors, email: undefined });
+    }
   }
 
   return (

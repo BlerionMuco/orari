@@ -15,9 +15,9 @@ interface SizeSpec {
 }
 
 const SIZES: Record<LogoSize, SizeSpec> = {
-  sm: { box: "h-[38px] w-[38px] rounded-[11px] text-[14px]", text: "text-[14px]", img: 30 },
-  md: { box: "h-[46px] w-[46px] rounded-[13px] text-[17px]", text: "text-[17px]", img: 38 },
-  lg: { box: "h-[54px] w-[54px] rounded-[15px] text-[20px]", text: "text-[20px]", img: 44 },
+  sm: { box: "h-9.5 w-9.5 rounded-[11px] text-[14px]", text: "text-[14px]", img: 30 },
+  md: { box: "h-11.5 w-11.5 rounded-[13px] text-[17px]", text: "text-[17px]", img: 38 },
+  lg: { box: "h-13.5 w-13.5 rounded-[15px] text-[20px]", text: "text-[20px]", img: 44 },
 };
 
 export interface BusinessLogoProps {

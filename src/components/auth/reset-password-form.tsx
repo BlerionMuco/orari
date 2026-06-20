@@ -78,7 +78,7 @@ export function ResetPasswordForm({
             />
           </Field>
         </div>
-        <div className="mb-[18px]">
+        <div className="mb-4.5">
           <Field
             id="confirmPassword"
             label="Confirm password"
@@ -92,7 +92,7 @@ export function ResetPasswordForm({
             />
           </Field>
         </div>
-        <div className="mb-[22px]">
+        <div className="mb-5.5">
           <PasswordRequirements value={passwordValue} />
         </div>
         <Button type="submit" block loading={isSubmitting} disabled={checking}>

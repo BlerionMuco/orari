@@ -37,7 +37,7 @@ export function WizardNav({
           onClick={onBack}
           className="lg:mr-auto"
         >
-          <ChevronLeft className="h-[17px] w-[17px]" strokeWidth={2.1} />
+          <ChevronLeft className="h-4.25 w-4.25" strokeWidth={2.1} />
           Back
         </Button>
       ) : null}
@@ -50,7 +50,7 @@ export function WizardNav({
       >
         <span>{primaryLabel}</span>
         {primaryArrow && !primaryBusy ? (
-          <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2.2} />
+          <ArrowRight className="h-4.5 w-4.5" strokeWidth={2.2} />
         ) : null}
       </Button>
     </div>

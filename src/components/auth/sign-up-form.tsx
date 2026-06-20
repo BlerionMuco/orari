@@ -63,7 +63,7 @@ export function SignUpForm({
             />
           </Field>
         </div>
-        <div className="mb-[18px]">
+        <div className="mb-4.5">
           <Field id="password" label="Password" error={errors.password?.message}>
             <PasswordInput
               autoComplete="new-password"
@@ -76,8 +76,8 @@ export function SignUpForm({
           control={control}
           name="acceptTerms"
           render={({ field }) => (
-            <div className="mb-[22px]">
-              <label className="flex cursor-pointer items-start gap-[9px] text-[13px] leading-[1.45] text-text-muted">
+            <div className="mb-5.5">
+              <label className="flex cursor-pointer items-start gap-2.25 text-[13px] leading-[1.45] text-text-muted">
                 <Checkbox
                   className="mt-px"
                   checked={field.value}
@@ -97,7 +97,7 @@ export function SignUpForm({
                 </span>
               </label>
               {errors.acceptTerms ? (
-                <p className="mt-[7px] text-[13px] text-danger-text">
+                <p className="mt-1.75 text-[13px] text-danger-text">
                   {errors.acceptTerms.message}
                 </p>
               ) : null}
@@ -108,7 +108,7 @@ export function SignUpForm({
           Create account
         </Button>
       </form>
-      <p className="mt-[22px] text-center text-[14px] text-text-muted">
+      <p className="mt-5.5 text-center text-[14px] text-text-muted">
         Already have an account?{" "}
         <Link href="/sign-in" className={linkClass}>
           Sign in

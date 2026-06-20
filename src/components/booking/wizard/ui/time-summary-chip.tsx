@@ -12,9 +12,9 @@ export function TimeSummaryChip({
   meta,
 }: TimeSummaryChipProps): React.JSX.Element {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface py-[5px] pl-[6px] pr-[14px]">
+    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.25 pl-1.5 pr-3.5">
       <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-primary-tint">
-        <Check className="h-[13px] w-[13px] text-primary" strokeWidth={2.2} />
+        <Check className="h-3.25 w-3.25 text-primary" strokeWidth={2.2} />
       </span>
       <span className="text-[13px] font-semibold text-text">{name}</span>
       {meta ? <span className="text-[12.5px] text-text-muted">{meta}</span> : null}

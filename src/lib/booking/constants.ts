@@ -2,6 +2,12 @@ import type { BookingRules } from "./types";
 
 export const MINUTES_PER_DAY = 1440;
 
+// Sentinel resourceId meaning "any available" — the server picks a free resource
+// (createAnyBooking). A concrete id books that specific resource. Lives here (not
+// in the wizard store) so the data layer can reference it without a
+// components → lib import.
+export const RESOURCE_ANY = "any" as const;
+
 // Hard cap on a single public availability query's span, so an anonymous request
 // can't ask for a multi-year range and spin CPU. The effective range is
 // min(business advance window, this).

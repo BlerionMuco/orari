@@ -1,3 +1,3 @@
-// Mirrors the member_role / resource_type Postgres enums in src/db/schema.ts.
-export type MemberRole = "owner" | "staff";
-export type ResourceType = "staff" | "asset";
+// Single-sourced from the member_role / resource_type Postgres enums. Type-only
+// re-export, so this stays free of any runtime (drizzle) dependency.
+export type { MemberRole, ResourceType } from "@/db/schema";

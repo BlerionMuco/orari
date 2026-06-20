@@ -99,7 +99,7 @@ export function OtpInput({
       id={id}
       aria-label="Verification code"
       aria-describedby={ariaDescribedBy}
-      className="flex items-center gap-[9px]"
+      className="flex items-center gap-2.25"
     >
       {cells.map((cell, index) => (
         <input

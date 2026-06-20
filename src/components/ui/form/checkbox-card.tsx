@@ -31,7 +31,7 @@ export const CheckboxCard = React.forwardRef<
       )}
     >
       {children}
-      <span className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[7px] border-2 border-border-strong transition-colors group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
+      <span className="flex h-5.5 w-5.5 flex-none items-center justify-center rounded-[7px] border-2 border-border-strong transition-colors group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
         <CheckboxPrimitive.Indicator className="flex text-surface">
           <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
         </CheckboxPrimitive.Indicator>

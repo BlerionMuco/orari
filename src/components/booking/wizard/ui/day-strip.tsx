@@ -23,11 +23,11 @@ export interface DayStripProps {
 // is derived from the server's returned date window, so it has no days yet).
 export function DayStripSkeleton(): React.JSX.Element {
   return (
-    <div className="-mx-0.5 flex gap-[9px] overflow-hidden px-0.5 pb-[11px]">
+    <div className="-mx-0.5 flex gap-2.25 overflow-hidden px-0.5 pb-2.75">
       {Array.from({ length: 7 }, (_, i) => (
         <div
           key={i}
-          className="h-[78px] w-[64px] flex-none animate-pulse rounded-[14px] bg-fill-subtle"
+          className="h-19.5 w-16 flex-none animate-pulse rounded-[14px] bg-fill-subtle"
         />
       ))}
     </div>
@@ -48,7 +48,7 @@ export function DayStrip({
       value={selectedIso ?? ""}
       onValueChange={onPick}
       aria-label="Choose a day"
-      className="-mx-0.5 flex min-w-0 max-w-full cursor-grab select-none gap-[9px] overflow-x-auto px-0.5 pb-[11px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%_-_16px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%_-_16px),transparent)]"
+      className="-mx-0.5 flex min-w-0 max-w-full cursor-grab select-none gap-2.25 overflow-x-auto px-0.5 pb-2.75 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%_-_16px),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%_-_16px),transparent)]"
     >
       {days.map((d) => (
         <RadioGroupItem
@@ -56,7 +56,7 @@ export function DayStrip({
           value={d.iso}
           disabled={d.disabled}
           className={cn(
-            "flex h-[78px] w-[64px] flex-none touch-manipulation select-none flex-col items-center justify-center gap-1 rounded-[14px] border transition-[transform,background-color,border-color]",
+            "flex h-19.5 w-16 flex-none touch-manipulation select-none flex-col items-center justify-center gap-1 rounded-[14px] border transition-[transform,background-color,border-color]",
             d.disabled
               ? "border-border bg-bg text-text-disabled"
               : "border-border bg-surface text-text hover:border-border-strong",
@@ -79,7 +79,7 @@ export function DayStrip({
               {d.statusText}
             </span>
           ) : (
-            <span className="h-[5px] w-[5px] rounded-full bg-success group-data-[state=checked]:bg-surface" />
+            <span className="h-1.25 w-1.25 rounded-full bg-success group-data-[state=checked]:bg-surface" />
           )}
         </RadioGroupItem>
       ))}

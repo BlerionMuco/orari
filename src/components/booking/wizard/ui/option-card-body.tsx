@@ -4,7 +4,7 @@ import * as React from "react";
 // (RadioGroupItem) cards. Both Radix controls expose `data-state="checked"`, so
 // one class string drives the selected look on either.
 export const optionCardClass =
-  "flex w-full touch-manipulation select-none items-center gap-[13px] rounded-[14px] border-[1.5px] border-border bg-surface p-[14px] text-left transition-[transform,border-color,background-color] hover:border-border-strong active:scale-[0.985] data-[state=checked]:border-primary data-[state=checked]:bg-primary-tint";
+  "flex w-full touch-manipulation select-none items-center gap-3.25 rounded-[14px] border-[1.5px] border-border bg-surface p-3.5 text-left transition-[transform,border-color,background-color] hover:border-border-strong active:scale-[0.985] data-[state=checked]:border-primary data-[state=checked]:bg-primary-tint";
 
 export interface OptionCardBodyProps {
   title: string;
@@ -25,7 +25,7 @@ export function OptionCardBody({
           {title}
         </span>
         {subtitle ? (
-          <span className="mt-[5px] block text-[13px] text-text-muted">
+          <span className="mt-1.25 block text-[13px] text-text-muted">
             {subtitle}
           </span>
         ) : null}

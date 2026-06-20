@@ -7,6 +7,18 @@ import { VERTICAL_LABELS, VERTICALS } from "@/lib/schemas/onboarding";
 
 export type Vertical = (typeof VERTICALS)[number];
 
+// Named access to the verticals (use Vertical.BARBER instead of a bare "barber").
+// `satisfies` keeps values valid; the parity test enforces exhaustiveness vs the
+// pgEnum / VERTICALS source.
+export const Vertical = {
+  BARBER: "barber",
+  CLINIC: "clinic",
+  TUTOR: "tutor",
+  SPA: "spa",
+  FITNESS: "fitness",
+  OTHER: "other",
+} as const satisfies Record<string, Vertical>;
+
 export { VERTICAL_LABELS };
 
 // Total over the enum — every vertical has a label, so no fallback is needed.

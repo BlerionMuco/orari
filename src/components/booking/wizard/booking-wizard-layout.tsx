@@ -20,7 +20,7 @@ export function BookingWizardLayout({
   children,
 }: BookingWizardLayoutProps): React.JSX.Element {
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col lg:block lg:max-w-[1080px]">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col lg:block lg:max-w-270">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:grid lg:grid-cols-[356px_minmax(0,1fr)] lg:items-start lg:gap-6">
         <aside className="mb-4 flex flex-col gap-4 lg:mb-0 lg:sticky lg:top-8">
           {businessCard}

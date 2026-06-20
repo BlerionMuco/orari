@@ -26,13 +26,13 @@ export function BusinessCard({
 
   return (
     <div className="rounded-[16px] border border-border bg-surface p-5 shadow-card">
-      <div className="flex items-start gap-[14px]">
+      <div className="flex items-start gap-3.5">
         <BusinessLogo logoUrl={business.logoUrl} name={business.name} size="md" />
         <div className="min-w-0 flex-1">
           <h1 className="text-[18px] font-semibold leading-tight tracking-[-0.015em] text-text">
             {business.name}
           </h1>
-          <p className="mt-[3px] text-[12.5px] text-text-muted">{subline}</p>
+          <p className="mt-0.75 text-[12.5px] text-text-muted">{subline}</p>
         </div>
       </div>
 
@@ -43,15 +43,15 @@ export function BusinessCard({
       ) : null}
 
       {business.phone || directions ? (
-        <div className="mt-[14px] flex items-center gap-[9px] lg:flex-col lg:items-stretch">
+        <div className="mt-3.5 flex items-center gap-2.25 lg:flex-col lg:items-stretch">
           {business.phone ? (
             <Button
               asChild
               variant="outline"
-              className="h-[42px] gap-[9px] rounded-[12px] bg-bg px-[14px] text-[13px] font-medium"
+              className="h-10.5 gap-2.25 rounded-[12px] bg-bg px-3.5 text-[13px] font-medium"
             >
               <a href={`tel:${business.phone}`}>
-                <Phone className="h-[15px] w-[15px] flex-none text-primary" strokeWidth={2} />
+                <Phone className="h-3.75 w-3.75 flex-none text-primary" strokeWidth={2} />
                 <span className="lg:hidden">Call</span>
                 <span className="hidden lg:inline">{business.phone}</span>
               </a>
@@ -61,10 +61,10 @@ export function BusinessCard({
             <Button
               asChild
               variant="outline"
-              className="h-[42px] min-w-0 flex-1 justify-start gap-[9px] rounded-[12px] bg-bg px-[14px] text-[13px] font-medium lg:flex-none"
+              className="h-10.5 min-w-0 flex-1 justify-start gap-2.25 rounded-[12px] bg-bg px-3.5 text-[13px] font-medium lg:flex-none"
             >
               <a href={directions} target="_blank" rel="noreferrer noopener">
-                <MapPin className="h-[15px] w-[15px] flex-none text-primary" strokeWidth={2} />
+                <MapPin className="h-3.75 w-3.75 flex-none text-primary" strokeWidth={2} />
                 <span className="min-w-0 truncate">{addressShort}</span>
                 <span className="ml-auto flex-none font-semibold text-primary">
                   Directions
