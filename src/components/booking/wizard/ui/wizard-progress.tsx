@@ -24,7 +24,7 @@ export function WizardProgress({
           {stepName}
         </span>
       </div>
-      <div className="flex gap-[5px]">
+      <div className="flex gap-1.25">
         {Array.from({ length: total }, (_, i) => (
           <div
             key={i}

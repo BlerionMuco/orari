@@ -59,14 +59,14 @@ export function ForgotPasswordForm({
     <div>
       <AuthHeader
         icon={
-          <Lock className="h-[23px] w-[23px]" strokeWidth={1.8} aria-hidden="true" />
+          <Lock className="h-5.75 w-5.75" strokeWidth={1.8} aria-hidden="true" />
         }
         title="Forgot your password?"
         subtitle="Enter the email linked to your account and we'll send you a link to reset it."
       />
       <FormError message={formError} />
       <form onSubmit={onSubmit} noValidate>
-        <div className="mb-[22px]">
+        <div className="mb-5.5">
           <Field id="email" label="Email" error={errors.email?.message}>
             <Input
               type="email"

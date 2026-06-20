@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/form/textarea";
 export interface GuestDetailsValue {
   name: string;
   phone: string;
+  email: string;
   note: string;
 }
 
 export interface GuestDetailsErrors {
   name?: string;
   phone?: string;
+  email?: string;
 }
 
 export interface GuestDetailsFieldsProps {
@@ -24,9 +26,9 @@ export interface GuestDetailsFieldsProps {
 
 function ErrorRow({ message }: { message: string }): React.JSX.Element {
   return (
-    <div className="mt-[7px] flex items-center gap-1.5 text-[12.5px] text-danger-text">
+    <div className="mt-1.75 flex items-center gap-1.5 text-[12.5px] text-danger-text">
       <AlertCircle
-        className="h-[13px] w-[13px] flex-none text-danger"
+        className="h-3.25 w-3.25 flex-none text-danger"
         strokeWidth={2}
       />
       {message}
@@ -34,7 +36,7 @@ function ErrorRow({ message }: { message: string }): React.JSX.Element {
   );
 }
 
-const labelClass = "mb-[7px] block text-[13px] font-semibold text-text";
+const labelClass = "mb-1.75 block text-[13px] font-semibold text-text";
 
 export function GuestDetailsFields({
   value,
@@ -78,6 +80,24 @@ export function GuestDetailsFields({
       </div>
 
       <div className="mt-4">
+        <label htmlFor="booking-email" className={labelClass}>
+          Email{" "}
+          <span className="font-normal text-text-disabled">· optional</span>
+        </label>
+        <Input
+          id="booking-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={value.email}
+          error={Boolean(errors.email)}
+          onChange={(e) => onChange({ email: e.target.value })}
+        />
+        {errors.email ? <ErrorRow message={errors.email} /> : null}
+      </div>
+
+      <div className="mt-4">
         <label htmlFor="booking-note" className={labelClass}>
           Note{" "}
           <span className="font-normal text-text-disabled">· optional</span>
@@ -91,9 +111,9 @@ export function GuestDetailsFields({
         />
       </div>
 
-      <div className="mt-4 flex items-center gap-[9px] rounded-[12px] bg-fill-subtle px-[14px] py-3">
+      <div className="mt-4 flex items-center gap-2.25 rounded-[12px] bg-fill-subtle px-3.5 py-3">
         <Lock
-          className="h-[17px] w-[17px] flex-none text-primary"
+          className="h-4.25 w-4.25 flex-none text-primary"
           strokeWidth={1.9}
         />
         <span className="text-[12.5px] leading-[1.4] text-text-muted">

@@ -29,7 +29,7 @@ export function ServicePicker({
       <div
         role="group"
         aria-label="Choose one or more services"
-        className="grid grid-cols-1 gap-[10px] lg:grid-cols-2 lg:gap-3"
+        className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:gap-3"
       >
         {services.map((service) => (
           <CheckboxCard
@@ -47,7 +47,7 @@ export function ServicePicker({
       </div>
 
       {selected.length > 0 ? (
-        <div className="mt-[13px] flex items-center justify-between rounded-[13px] bg-primary-tint px-[15px] py-[13px]">
+        <div className="mt-3.25 flex items-center justify-between rounded-[13px] bg-primary-tint px-3.75 py-3.25">
           <span className="text-[13px] font-semibold text-primary-pressed">
             {selected.length} {selected.length === 1 ? "service" : "services"}
           </span>

@@ -5,8 +5,8 @@ import { Clock } from "lucide-react";
 import { groupSlotsByPartOfDay } from "@/lib/booking/slots-view";
 import { formatTimezoneLabel } from "@/lib/booking/time";
 import { dayLabel } from "@/lib/booking/day-label";
-import { useBookingWizard } from "../booking-wizard-store";
-import { useAvailability } from "../use-availability";
+import { useBookingWizard, RESOURCE_ANY } from "../booking-wizard-store";
+import { useAvailability } from "@/lib/booking/query";
 import { useBookingSummary } from "../use-booking-summary";
 import { StepShell } from "../ui/step-shell";
 import { TimeSummaryChip } from "../ui/time-summary-chip";
@@ -25,6 +25,9 @@ function jumpLabel(iso: string, todayIso: string): string {
 }
 
 export function TimeStep(): React.JSX.Element {
+  const businessId = useBookingWizard((s) => s.business.id);
+  const serviceIds = useBookingWizard((s) => s.serviceIds);
+  const resourceChoice = useBookingWizard((s) => s.resourceId);
   const timezone = useBookingWizard((s) => s.business.timezone);
   const dayIso = useBookingWizard((s) => s.dayIso);
   const slot = useBookingWizard((s) => s.slot);
@@ -32,7 +35,17 @@ export function TimeStep(): React.JSX.Element {
   const setSlot = useBookingWizard((s) => s.setSlot);
   const submitError = useBookingWizard((s) => s.submitError);
 
-  const { days, todayIso: serverToday, loading, slots } = useAvailability(dayIso);
+  // "any"/null → union (omit resourceId); a concrete id → that resource.
+  const resourceId =
+    resourceChoice && resourceChoice !== RESOURCE_ANY
+      ? resourceChoice
+      : undefined;
+  const { days, todayIso: serverToday, loading, slots } = useAvailability({
+    businessId,
+    serviceIds,
+    resourceId,
+    dayIso,
+  });
   const { serviceName, durationMeta, totalDuration } = useBookingSummary();
 
   // Default to the first bookable day once availability loads.
@@ -100,8 +113,8 @@ export function TimeStep(): React.JSX.Element {
       ) : (
         <DayStrip days={dayPills} selectedIso={dayIso} onPick={setDay} />
       )}
-      <div className="my-3.5 flex items-center gap-[7px]">
-        <Clock className="h-[13px] w-[13px] flex-none text-text-muted" strokeWidth={1.8} />
+      <div className="my-3.5 flex items-center gap-1.75">
+        <Clock className="h-3.25 w-3.25 flex-none text-text-muted" strokeWidth={1.8} />
         <span className="text-[12px] text-text-muted">
           {totalDuration > 0 ? totalDuration : 30}-minute appointment ·{" "}
           {formatTimezoneLabel(timezone)}
@@ -110,7 +123,7 @@ export function TimeStep(): React.JSX.Element {
       {/* Day strip + meta stay put; only the slots scroll, inside a capped
           height so a long list never blows out the step (mobile) or the card
           (desktop). Negative/positive x-padding keeps chip shadows unclipped. */}
-      <div className="max-h-[42vh] min-w-0 overflow-y-auto overscroll-contain lg:max-h-[400px]">
+      <div className="max-h-[42vh] min-w-0 overflow-y-auto overscroll-contain lg:max-h-100">
         <SlotGrid
           loading={loading}
           groups={groups}

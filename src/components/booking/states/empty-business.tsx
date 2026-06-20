@@ -12,14 +12,14 @@ export function EmptyBusiness({
   business,
 }: EmptyBusinessProps): React.JSX.Element {
   return (
-    <div className="mx-auto w-full max-w-[460px] rounded-[20px] border border-border bg-surface p-10 text-center shadow-card">
+    <div className="mx-auto w-full max-w-115 rounded-[20px] border border-border bg-surface p-10 text-center shadow-card">
       <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-[15px] bg-fill-subtle">
         <Info className="h-7 w-7 text-text-muted" strokeWidth={1.7} />
       </div>
       <h2 className="text-[21px] font-semibold tracking-[-0.01em] text-text">
         Not taking online bookings
       </h2>
-      <p className="mx-auto mt-2.5 max-w-[300px] text-[14px] leading-[1.55] text-text-muted">
+      <p className="mx-auto mt-2.5 max-w-75 text-[14px] leading-[1.55] text-text-muted">
         {business.name} isn&apos;t taking online bookings right now.
         {business.phone ? " Give them a call to book directly." : ""}
       </p>
@@ -30,7 +30,7 @@ export function EmptyBusiness({
           className="mt-6 shadow-[0_8px_20px_-8px_rgba(91,95,199,0.5)]"
         >
           <a href={`tel:${business.phone}`}>
-            <Phone className="h-[17px] w-[17px]" strokeWidth={2} />
+            <Phone className="h-4.25 w-4.25" strokeWidth={2} />
             Call {business.phone}
           </a>
         </Button>

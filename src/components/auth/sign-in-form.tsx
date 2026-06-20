@@ -55,7 +55,7 @@ export function SignInForm({
           </Field>
         </div>
         <div className="mb-1">
-          <div className="mb-[7px] flex items-baseline justify-between">
+          <div className="mb-1.75 flex items-baseline justify-between">
             <Label htmlFor="password">Password</Label>
             <Link href="/forgot-password" className={`text-[12.5px] ${linkClass}`}>
               Forgot?
@@ -70,7 +70,7 @@ export function SignInForm({
             {...register("password")}
           />
           {errors.password ? (
-            <p id="password-error" className="mt-[7px] text-[13px] text-danger-text">
+            <p id="password-error" className="mt-1.75 text-[13px] text-danger-text">
               {errors.password.message}
             </p>
           ) : null}
@@ -79,7 +79,7 @@ export function SignInForm({
           control={control}
           name="remember"
           render={({ field }) => (
-            <label className="mt-4 mb-[22px] flex min-h-11 cursor-pointer items-center gap-[9px] text-[13.5px] text-text-muted">
+            <label className="mt-4 mb-5.5 flex min-h-11 cursor-pointer items-center gap-2.25 text-[13.5px] text-text-muted">
               <Checkbox
                 checked={field.value}
                 onCheckedChange={(checked) => field.onChange(checked === true)}
@@ -92,7 +92,7 @@ export function SignInForm({
           Sign in
         </Button>
       </form>
-      <p className="mt-[22px] text-center text-[14px] text-text-muted">
+      <p className="mt-5.5 text-center text-[14px] text-text-muted">
         New to orari?{" "}
         <Link href="/sign-up" className={linkClass}>
           Create an account

@@ -35,12 +35,12 @@ export function SuccessPanel({
 
   return (
     <div className="flex justify-center">
-      <div className="w-full max-w-[520px] text-center lg:rounded-[20px] lg:border lg:border-border lg:bg-surface lg:p-9 lg:shadow-card">
+      <div className="w-full max-w-130 text-center lg:rounded-[20px] lg:border lg:border-border lg:bg-surface lg:p-9 lg:shadow-card">
         <motion.div
           initial={reduce ? false : { scale: 0.4 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 320, damping: 16 }}
-          className="mx-auto mb-[22px] flex h-[88px] w-[88px] items-center justify-center rounded-full bg-success-bg"
+          className="mx-auto mb-5.5 flex h-22 w-22 items-center justify-center rounded-full bg-success-bg"
         >
           <svg width="52" height="52" viewBox="0 0 52 52" fill="none" className="text-success">
             <motion.circle
@@ -66,17 +66,17 @@ export function SuccessPanel({
         <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-text">
           You&apos;re booked
         </h2>
-        <p className="mx-auto mt-1.5 max-w-[320px] text-[14px] leading-[1.5] text-text-muted">
+        <p className="mx-auto mt-1.5 max-w-80 text-[14px] leading-[1.5] text-text-muted">
           See you soon at {businessName}. No need to pay online — settle up in
           person.
         </p>
-        <span className="mb-6 mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-[11px] py-[5px] text-[12px] font-medium text-primary">
+        <span className="mb-6 mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-tint px-2.75 py-1.25 text-[12px] font-medium text-primary">
           Confirmation {confirmationCode}
         </span>
 
         <ReviewSummary rows={rows} tone="subtle" className="text-left" />
 
-        <div className="mt-[18px] flex gap-2.5">
+        <div className="mt-4.5 flex gap-2.5">
           {directionsHref ? (
             <Button
               asChild
@@ -84,7 +84,7 @@ export function SuccessPanel({
               className="flex-1 shadow-[0_8px_20px_-8px_rgba(91,95,199,0.5)]"
             >
               <a href={directionsHref} target="_blank" rel="noreferrer noopener">
-                <MapPin className="h-[18px] w-[18px]" strokeWidth={2} />
+                <MapPin className="h-4.5 w-4.5" strokeWidth={2} />
                 Get directions
               </a>
             </Button>
@@ -93,10 +93,10 @@ export function SuccessPanel({
             asChild
             variant="outline"
             size="lg"
-            className="w-[54px] flex-none px-0 text-primary"
+            className="w-13.5 flex-none px-0 text-primary"
           >
             <a href={icsHref} download="orari-booking.ics" aria-label="Add to calendar">
-              <CalendarPlus className="h-[19px] w-[19px]" strokeWidth={1.9} />
+              <CalendarPlus className="h-4.75 w-4.75" strokeWidth={1.9} />
             </a>
           </Button>
         </div>
@@ -104,7 +104,7 @@ export function SuccessPanel({
         <Button
           variant="ghost"
           onClick={onBookAnother}
-          className="mt-[18px] text-[13.5px] text-text-muted"
+          className="mt-4.5 text-[13.5px] text-text-muted"
         >
           Book another appointment
         </Button>

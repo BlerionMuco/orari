@@ -56,7 +56,7 @@ export function BarberPicker({
       value={selectedId ?? ""}
       onValueChange={onSelect}
       aria-label="Choose your barber"
-      className="grid grid-cols-1 gap-[10px] lg:grid-cols-2 lg:gap-3"
+      className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:gap-3"
     >
       {barbers.map((barber) => (
         <RadioGroupItem key={barber.id} value={barber.id} className={optionCardClass}>

@@ -15,16 +15,16 @@ export function OAuthButtons({
   disabled = false,
 }: OAuthButtonsProps): React.JSX.Element {
   return (
-    <div className="mb-[18px]">
+    <div className="mb-4.5">
       <div className="grid grid-cols-2 gap-2.5">
         <Button
           type="button"
           variant="outline"
           onClick={onGoogle}
           disabled={disabled}
-          className="gap-[9px] text-[14.5px]"
+          className="gap-2.25 text-[14.5px]"
         >
-          <GoogleIcon className="h-[17px] w-[17px]" />
+          <GoogleIcon className="h-4.25 w-4.25" />
           Google
         </Button>
         <Button
@@ -38,7 +38,7 @@ export function OAuthButtons({
           Apple
         </Button>
       </div>
-      <div className="mt-[18px] flex items-center gap-3">
+      <div className="mt-4.5 flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
         <span className="text-[12.5px] text-text-disabled">or</span>
         <span className="h-px flex-1 bg-border" />

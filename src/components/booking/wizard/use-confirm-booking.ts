@@ -1,21 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Step } from "@/lib/booking/steps";
 import { BookingFailureCode } from "@/lib/booking/booking-codes";
-import { createBookingAction } from "@/app/(public)/book/actions";
+import { useCreateBooking } from "@/lib/booking/query";
 import {
   useBookingWizard,
   WizardStatus,
   RESOURCE_ANY,
 } from "./booking-wizard-store";
 
-// Real submit: calls the createBookingAction server action with the full basket
-// and maps the result onto the store. On success → status "booked" + result; on
-// failure → back to "idle" with a submitError shown on Review (e.g. a slot taken
-// in the meantime). Server-side idempotency (the rotated key) makes a double
-// Confirm safe; an in-flight ref guards against concurrent calls too.
+// Wizard glue over the generic useCreateBooking mutation: reads the store, fires
+// the mutation, and maps the result onto wizard state. On success → "booked" +
+// result; on a slot taken under us → drop the slot + bounce to the time step
+// (availability is refetched by the mutation's onSettled invalidate); otherwise
+// → "idle" with a submitError. An in-flight ref + status guard prevent
+// double-submits (the server idempotency key is the real backstop).
 export function useConfirmBooking(): { confirm: () => void } {
   const businessId = useBookingWizard((s) => s.business.id);
   const serviceIds = useBookingWizard((s) => s.serviceIds);
@@ -30,9 +30,40 @@ export function useConfirmBooking(): { confirm: () => void } {
   const setSlot = useBookingWizard((s) => s.setSlot);
   const setStepIndex = useBookingWizard((s) => s.setStepIndex);
   const steps = useBookingWizard((s) => s.steps);
-  const queryClient = useQueryClient();
 
   const inFlight = React.useRef(false);
+
+  const { mutate } = useCreateBooking({
+    onSuccess: (res) => {
+      if (res.booking) {
+        setResult({
+          manageToken: res.booking.manageToken,
+          confirmationCode: `#${res.booking.manageToken
+            .slice(0, 4)
+            .toUpperCase()}`,
+          resourceName: res.booking.resource.name,
+        });
+        setStatus(WizardStatus.BOOKED);
+      } else if (res.code === BookingFailureCode.SLOT_TAKEN) {
+        // Taken under us: drop the stale slot + bounce to the time step to
+        // re-pick. setSlot clears submitError, so set the message AFTER it.
+        setStatus(WizardStatus.IDLE);
+        setSlot(null);
+        const timeIdx = steps.indexOf(Step.TIME);
+        if (timeIdx >= 0) setStepIndex(timeIdx);
+        setSubmitError(res.error ?? "That time was just taken — pick another.");
+      } else {
+        setStatus(WizardStatus.IDLE);
+        setSubmitError(
+          res.error ?? "Could not complete your booking. Please try again.",
+        );
+      }
+    },
+    onError: () => {
+      setStatus(WizardStatus.IDLE);
+      setSubmitError("Could not complete your booking. Please try again.");
+    },
+  });
 
   const confirm = React.useCallback(() => {
     if (inFlight.current || status === WizardStatus.CONFIRMING) return;
@@ -49,52 +80,24 @@ export function useConfirmBooking(): { confirm: () => void } {
         ? resourceChoice
         : undefined;
 
-    void createBookingAction({
-      businessId,
-      resourceId,
-      serviceIds,
-      startsAt: slot.startUtc,
-      customerName: guest.name,
-      customerPhone: guest.phone,
-      notes: guest.note ? guest.note : undefined,
-      idempotencyKey: idempotencyKey ?? undefined,
-    })
-      .then((res) => {
-        if (res.booking) {
-          setResult({
-            manageToken: res.booking.manageToken,
-            confirmationCode: `#${res.booking.manageToken
-              .slice(0, 4)
-              .toUpperCase()}`,
-            resourceName: res.booking.resource.name,
-          });
-          setStatus(WizardStatus.BOOKED);
-        } else if (res.code === BookingFailureCode.SLOT_TAKEN) {
-          // Taken out from under us: drop the stale selection, refresh
-          // availability, and bounce to the time step to re-pick. setSlot clears
-          // submitError, so set the message AFTER it.
-          setStatus(WizardStatus.IDLE);
-          setSlot(null);
-          void queryClient.invalidateQueries({ queryKey: ["availability"] });
-          const timeIdx = steps.indexOf(Step.TIME);
-          if (timeIdx >= 0) setStepIndex(timeIdx);
-          setSubmitError(
-            res.error ?? "That time was just taken — pick another.",
-          );
-        } else {
-          setStatus(WizardStatus.IDLE);
-          setSubmitError(
-            res.error ?? "Could not complete your booking. Please try again.",
-          );
-        }
-      })
-      .catch(() => {
-        setStatus(WizardStatus.IDLE);
-        setSubmitError("Could not complete your booking. Please try again.");
-      })
-      .finally(() => {
-        inFlight.current = false;
-      });
+    mutate(
+      {
+        businessId,
+        resourceId,
+        serviceIds,
+        startsAt: new Date(slot.startUtc),
+        customerName: guest.name,
+        customerPhone: guest.phone,
+        customerEmail: guest.email.trim() ? guest.email.trim() : undefined,
+        notes: guest.note ? guest.note : undefined,
+        idempotencyKey: idempotencyKey ?? undefined,
+      },
+      {
+        onSettled: () => {
+          inFlight.current = false;
+        },
+      },
+    );
   }, [
     businessId,
     serviceIds,
@@ -104,12 +107,8 @@ export function useConfirmBooking(): { confirm: () => void } {
     idempotencyKey,
     status,
     setStatus,
-    setResult,
     setSubmitError,
-    setSlot,
-    setStepIndex,
-    steps,
-    queryClient,
+    mutate,
   ]);
 
   return { confirm };

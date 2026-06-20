@@ -27,6 +27,7 @@ Correctness is not optional. Do not guess at APIs, prop names, types, or behavio
 - No inline styles. The `style={{ ... }}` prop is not allowed on components.
 - Use Tailwind CSS utility classes via `className` for all styling.
 - Avoid arbitrary-value classes (e.g. `w-[437px]`, `text-[#3a3a3a]`) except when a design genuinely requires it. Prefer the theme scale and define repeated values in the Tailwind config instead of hardcoding them.
+- When an arbitrary **pixel** value maps onto the spacing scale, use the scale shorthand, not the bracket form — Tailwind's spacing unit is 4px, so divide by 4: `max-w-[300px]` → `max-w-75`, `h-[52px]` → `h-13`, `gap-[18px]` → `gap-4.5`, `p-[6px]` → `p-1.5`. Applies to spacing/sizing utilities (`w`/`h`/`size`/`min-*`/`max-*`/`p*`/`m*`/`gap*`/`inset*`/`top`/`right`/`bottom`/`left`/`space-*`/`translate-*`/`basis`), and v4 generates half-steps (`4.5`, `11.5`) so those convert too. Keep the bracket form only when ÷4 has no generated step, or for non-spacing scales (`text-[15px]`, `rounded-[14px]`, `border-[1.5px]`, `ring-[3px]`).
 
 ## Mobile-First (top priority)
 
@@ -101,6 +102,7 @@ The first phase sets the layout every later feature must follow. Put new code wh
 - **Server actions**: route-specific actions colocate as `actions.ts` inside the route folder (`app/onboarding/actions.ts`, `app/(public)/book/actions.ts`); cross-cutting actions go in `lib/<domain>/actions.ts` (`lib/auth/actions.ts`).
 - **Pure vs server-only**: inside a `lib/<domain>/`, keep pure logic (no DB/IO, no `Date.now()` — inject `now`) in its own files so it is unit-testable; isolate Drizzle/Supabase IO in dedicated files marked with `import "server-only"` at the top. The booking engine is the template: `time.ts`/`availability.ts` are pure; `queries.ts`/`create-booking.ts`/`get-available-slots.ts` are server-only.
 - **DB-only columns**: a column maintained purely by SQL (trigger/constraint, e.g. `reserved_range`) is intentionally **not** modeled in `schema.ts`; recompute its value in app code instead of reading it back. Document the omission with a comment.
+- **Client data fetching (React Query)**: all server-state goes through a per-domain data layer at `lib/<domain>/query/` (`api.ts` = the only place routes/actions are called; `use-*.ts` = `useQuery` reads / `useMutation` writes; central keys in `lib/query/keys.ts`). Components call the hooks, never `fetch`/actions directly. Mirror the booking layer; see `docs/v1/react-query.md`.
 
 ### Tests
 - Colocate tests in a `__tests__/` folder next to the code. `*.test.ts` = pure unit tests (no DB, run by default). `*.integration.test.ts` = DB-touching, gated behind `RUN_DB_TESTS` and pointed at a throwaway Postgres; they must create isolated fixtures and tear them down.

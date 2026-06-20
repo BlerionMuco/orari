@@ -41,7 +41,7 @@ export const RadioGroupItem = React.forwardRef<
 // white dot when its item is checked.
 export function RadioCircle(): React.JSX.Element {
   return (
-    <span className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full border-2 border-border-strong transition-colors group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
+    <span className="flex h-5.5 w-5.5 flex-none items-center justify-center rounded-full border-2 border-border-strong transition-colors group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
       <RadioGroupPrimitive.Indicator className="flex">
         <span className="h-2 w-2 rounded-full bg-surface" />
       </RadioGroupPrimitive.Indicator>

@@ -32,15 +32,15 @@ export interface SlotGridProps {
 }
 
 const chipClass =
-  "flex h-[46px] touch-manipulation select-none items-center justify-center gap-[5px] rounded-[12px] border border-border bg-surface text-[15px] font-medium tabular-nums text-text transition-[transform,background-color,border-color,color] hover:border-border-strong active:scale-[0.94] data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-surface data-[state=checked]:shadow-[0_8px_18px_-8px_rgba(91,95,199,0.55)]";
+  "flex h-11.5 touch-manipulation select-none items-center justify-center gap-1.25 rounded-[12px] border border-border bg-surface text-[15px] font-medium tabular-nums text-text transition-[transform,background-color,border-color,color] hover:border-border-strong active:scale-[0.94] data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-surface data-[state=checked]:shadow-[0_8px_18px_-8px_rgba(91,95,199,0.55)]";
 
 function Skeleton(): React.JSX.Element {
   return (
     <div>
-      <div className="mb-[13px] h-[11px] w-[74px] rounded-[5px] bg-fill-subtle" />
-      <div className="mb-5 grid grid-cols-3 gap-[9px] lg:grid-cols-5 lg:gap-2.5">
+      <div className="mb-3.25 h-2.75 w-18.5 rounded-[5px] bg-fill-subtle" />
+      <div className="mb-5 grid grid-cols-3 gap-2.25 lg:grid-cols-5 lg:gap-2.5">
         {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="h-[46px] animate-pulse rounded-[12px] bg-fill-subtle" />
+          <div key={i} className="h-11.5 animate-pulse rounded-[12px] bg-fill-subtle" />
         ))}
       </div>
     </div>
@@ -58,21 +58,21 @@ export function SlotGrid({
 
   if (groups.length === 0 && empty) {
     return (
-      <div className="rounded-[16px] border border-border bg-surface px-3 pb-[30px] pt-[34px] text-center">
-        <div className="mx-auto mb-[15px] flex h-[54px] w-[54px] items-center justify-center rounded-[15px] bg-fill-subtle">
-          <Calendar className="h-[26px] w-[26px] text-text-muted" strokeWidth={1.7} />
+      <div className="rounded-[16px] border border-border bg-surface px-3 pb-7.5 pt-8.5 text-center">
+        <div className="mx-auto mb-3.75 flex h-13.5 w-13.5 items-center justify-center rounded-[15px] bg-fill-subtle">
+          <Calendar className="h-6.5 w-6.5 text-text-muted" strokeWidth={1.7} />
         </div>
         <h3 className="text-[17px] font-semibold text-text">
           No times available on this day
         </h3>
-        <p className="mt-[5px] text-[13.5px] leading-[1.5] text-text-muted">
+        <p className="mt-1.25 text-[13.5px] leading-[1.5] text-text-muted">
           {empty.dayName} is fully booked.
         </p>
         {empty.nextLabel ? (
           <Button
             variant="outline"
             onClick={empty.onJumpNext}
-            className="mt-[18px] h-11 gap-[7px] rounded-[12px] border-primary text-primary hover:border-primary hover:bg-primary-tint"
+            className="mt-4.5 h-11 gap-1.75 rounded-[12px] border-primary text-primary hover:border-primary hover:bg-primary-tint"
           >
             Jump to {empty.nextLabel}
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -99,14 +99,14 @@ export function SlotGrid({
               {group.openCount} open
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-[9px] lg:grid-cols-5 lg:gap-2.5">
+          <div className="grid grid-cols-3 gap-2.25 lg:grid-cols-5 lg:gap-2.5">
             {group.slots.map((slot, i) => {
               // Taken / placeholder slots (no startUtc) aren't selectable.
               if (!slot.startUtc || slot.disabled) {
                 return (
                   <span
                     key={slot.startUtc ?? `${group.title}-${i}`}
-                    className="flex h-[46px] items-center justify-center rounded-[12px] border border-border bg-fill-subtle text-[15px] font-medium tabular-nums text-text-disabled line-through"
+                    className="flex h-11.5 items-center justify-center rounded-[12px] border border-border bg-fill-subtle text-[15px] font-medium tabular-nums text-text-disabled line-through"
                   >
                     {slot.label}
                   </span>
@@ -120,7 +120,7 @@ export function SlotGrid({
                   className={chipClass}
                 >
                   {isSelected ? (
-                    <Check className="h-[13px] w-[13px]" strokeWidth={2.7} />
+                    <Check className="h-3.25 w-3.25" strokeWidth={2.7} />
                   ) : null}
                   <span>{slot.label}</span>
                 </RadioGroupItem>

@@ -12,15 +12,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { Location } from "@/lib/schemas/business";
+import { VERTICALS } from "@/lib/schemas/onboarding";
 
-export const verticalEnum = pgEnum("vertical", [
-  "barber",
-  "clinic",
-  "tutor",
-  "spa",
-  "fitness",
-  "other",
-]);
+// Single source: the pgEnum is built from VERTICALS (which also derives the
+// `Vertical` type + labels), so the DB enum and app types can't drift.
+export const verticalEnum = pgEnum("vertical", VERTICALS);
 
 export const bookingStatusEnum = pgEnum("booking_status", [
   "held",
@@ -44,8 +40,13 @@ export const BookingStatus = {
 } as const satisfies Record<string, BookingStatus>;
 
 export const memberRoleEnum = pgEnum("member_role", ["owner", "staff"]);
+// Types derived from the pgEnums so app code shares one source (no hand-kept
+// union). Named const objects are added where a feature actually needs named
+// access (e.g. BookingStatus); these are type-only until then.
+export type MemberRole = (typeof memberRoleEnum.enumValues)[number];
 
 export const resourceTypeEnum = pgEnum("resource_type", ["staff", "asset"]);
+export type ResourceType = (typeof resourceTypeEnum.enumValues)[number];
 
 export const inviteStatusEnum = pgEnum("invite_status", [
   "pending",
@@ -53,6 +54,7 @@ export const inviteStatusEnum = pgEnum("invite_status", [
   "expired",
   "revoked",
 ]);
+export type InviteStatus = (typeof inviteStatusEnum.enumValues)[number];
 
 // Mirror of the Supabase-managed auth.users row. The FK to auth.users(id) and
 // the AFTER INSERT trigger that populates this table live in raw SQL — Drizzle

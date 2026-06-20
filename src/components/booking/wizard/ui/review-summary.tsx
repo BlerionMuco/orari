@@ -24,7 +24,7 @@ export function ReviewSummary({
   return (
     <div
       className={cn(
-        "rounded-[16px] border border-border px-[18px]",
+        "rounded-[16px] border border-border px-4.5",
         tone === "surface" ? "bg-surface shadow-card" : "bg-bg",
         className,
       )}
@@ -33,7 +33,7 @@ export function ReviewSummary({
         <div
           key={row.label}
           className={cn(
-            "flex items-center justify-between gap-3.5 py-[13px]",
+            "flex items-center justify-between gap-3.5 py-3.25",
             i < rows.length - 1 && "border-b border-fill-subtle",
           )}
         >

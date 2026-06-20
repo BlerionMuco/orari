@@ -9,11 +9,12 @@ import type {
   PublicService,
 } from "@/lib/booking/public-dto";
 import { buildSteps, type Step } from "@/lib/booking/steps";
+import { RESOURCE_ANY } from "@/lib/booking/constants";
 import type { AvailabilitySlot } from "@/lib/booking/types";
 
-// RESOURCE_ANY = the server picks a free resource (createAnyBooking). A concrete
-// id = that specific resource.
-export const RESOURCE_ANY = "any" as const;
+// RESOURCE_ANY (server picks a free resource) is single-sourced in lib/booking;
+// re-exported here so existing wizard imports keep working.
+export { RESOURCE_ANY };
 export type ResourceChoice = string | typeof RESOURCE_ANY;
 
 export const WizardStatus = {
@@ -26,12 +27,14 @@ export type WizardStatus = (typeof WizardStatus)[keyof typeof WizardStatus];
 export interface GuestDetails {
   name: string;
   phone: string;
+  email: string;
   note: string;
 }
 
 export interface WizardErrors {
   name?: string;
   phone?: string;
+  email?: string;
 }
 
 export interface BookingResult {
@@ -99,7 +102,7 @@ function createBookingWizardStore(init: BookingWizardInit): Store {
     resourceId: null,
     dayIso: null,
     slot: null,
-    guest: { name: "", phone: "", note: "" },
+    guest: { name: "", phone: "", email: "", note: "" },
     errors: {},
     status: WizardStatus.IDLE,
     result: null,

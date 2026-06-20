@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBookingWizard, RESOURCE_ANY } from "../booking-wizard-store";
-import { availabilityQueryOptions } from "../use-availability";
+import { availabilityQueryOptions } from "@/lib/booking/query";
 import {
   BarberPicker,
   BarberOptionKind,

@@ -48,11 +48,20 @@ function renderStep(step: Step): React.JSX.Element {
   }
 }
 
-function validateGuest(name: string, phone: string): WizardErrors {
+function validateGuest(
+  name: string,
+  phone: string,
+  email: string,
+): WizardErrors {
   const errors: WizardErrors = {};
   if (name.trim().length < 2) errors.name = "Please enter your name.";
   if ((phone.match(/\d/g) ?? []).length < 8) {
     errors.phone = "Enter a valid phone number.";
+  }
+  // Email is optional — validate only when provided.
+  const trimmedEmail = email.trim();
+  if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    errors.email = "Enter a valid email.";
   }
   return errors;
 }
@@ -81,8 +90,9 @@ export function BookingWizard(): React.JSX.Element {
 
   // Details is valid only when name + phone pass (same rules as the submit
   // guard) — so the "Review booking" button stays disabled until then.
-  const detailsErrors = validateGuest(guest.name, guest.phone);
-  const detailsValid = !detailsErrors.name && !detailsErrors.phone;
+  const detailsErrors = validateGuest(guest.name, guest.phone, guest.email);
+  const detailsValid =
+    !detailsErrors.name && !detailsErrors.phone && !detailsErrors.email;
 
   const canContinue =
     step === Step.SERVICE
@@ -121,8 +131,8 @@ export function BookingWizard(): React.JSX.Element {
       return;
     }
     if (step === Step.DETAILS) {
-      const errors = validateGuest(guest.name, guest.phone);
-      if (errors.name || errors.phone) setErrors(errors);
+      const errors = validateGuest(guest.name, guest.phone, guest.email);
+      if (errors.name || errors.phone || errors.email) setErrors(errors);
       else goForward();
       return;
     }

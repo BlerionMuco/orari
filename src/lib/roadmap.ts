@@ -30,7 +30,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Foundation",
     items: [
-      { label: "Project scaffold — Next.js, Tailwind, Radix, RHF/Zod, Zustand, React Query, TS", status: "done" },
+      { label: "Project scaffold — Next.js, Tailwind, Radix, RHF/Zod, Zustand, React Query, TS", status: "done", note: "React Query structured as a per-domain data layer (lib/<domain>/query + central QUERY_KEYS; useQuery reads / useMutation writes; retry:false) — see docs/v1/react-query.md" },
       { label: "Route groups — (auth), (public), (dashboard)", status: "done" },
       { label: "Supabase clients + proxy session refresh", status: "done", note: "/auth/callback excluded from the proxy matcher so it doesn't double-write cookies during the recovery exchange" },
       { label: "Shared Zod schema pattern (src/lib/schemas)", status: "done" },
@@ -80,7 +80,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
       { label: "Service selection (multi-select basket)", status: "done", note: "multi-service: pick >1 per booking; summed duration/price; Radix CheckboxCard" },
       { label: "Resource selection (skippable when only one)", status: "done", note: "specific barber or 'Any available' (server-assigned); Radix RadioGroup" },
       { label: "Time picker — real availability + slot states + timezone label", status: "done", note: "real /api/public/availability fetch (react-query); drag/swipe day strip; slots scroll in capped box" },
-      { label: "Guest details form (name, phone, email — no account)", status: "partial", note: "name + phone + note wired; email field not yet collected (engine accepts it)" },
+      { label: "Guest details form (name, phone, email — no account)", status: "done", note: "name + phone + email (optional, validated) + note; threaded to the engine (customer_email persisted)" },
       { label: "Confirmation screen", status: "done", note: "success panel — code, summary, add-to-calendar (ICS); real createBookingAction" },
       { label: "Manage-booking page via tokenized link (view / cancel / reschedule)", status: "todo", note: "BE ready (loadBookingByManageToken, cancelBooking/cancelBookingAction); no route/UI yet" },
       { label: "Error states — 404, business not found, no availability", status: "done", note: "not-found route + empty-business + empty-day (jump-to-next); rate limiting still separate" },

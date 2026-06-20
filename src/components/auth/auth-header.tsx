@@ -17,9 +17,9 @@ export function AuthHeader({
 }: AuthHeaderProps): React.JSX.Element {
   return (
     <div className={cn("mb-6", className)}>
-      <OrariLogo className="mb-[26px]" />
+      <OrariLogo className="mb-6.5" />
       {icon ? (
-        <div className="mb-[18px] flex h-12 w-12 items-center justify-center rounded-[13px] bg-primary-tint text-primary">
+        <div className="mb-4.5 flex h-12 w-12 items-center justify-center rounded-[13px] bg-primary-tint text-primary">
           {icon}
         </div>
       ) : null}

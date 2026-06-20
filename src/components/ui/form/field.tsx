@@ -40,7 +40,7 @@ export function Field({
   });
 
   return (
-    <div className={cn("flex flex-col gap-[7px]", className)}>
+    <div className={cn("flex flex-col gap-1.75", className)}>
       <Label htmlFor={id}>{label}</Label>
       {control}
       {error ? (
