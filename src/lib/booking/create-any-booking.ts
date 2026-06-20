@@ -4,8 +4,10 @@ import { normalizePhone } from "@/lib/business/phone";
 import type { Resource } from "@/db/schema";
 import { MINUTES_PER_DAY } from "./constants";
 import { validateSlot } from "./availability";
+import { buildServiceBundle } from "./service-bundle";
 import { insertConfirmedBooking } from "./book-insert";
 import { isPgError, pgConstraintName } from "./pg-errors";
+import { BookingFailureCode } from "./booking-codes";
 import { localIsoDate, localPartsToUtc } from "./time";
 import {
   countLiveBookingsPerResource,
@@ -45,16 +47,17 @@ export async function createAnyBooking(
     if (existing) return replaySuccess(input.businessId, existing);
   }
 
-  const ctx = await loadServiceContext(input.businessId, input.serviceId);
+  const ctx = await loadServiceContext(input.businessId, input.serviceIds);
   if (!ctx) {
     return {
       ok: false,
-      code: "not-found",
+      code: BookingFailureCode.NOT_FOUND,
       error: "This service is no longer available.",
     };
   }
 
-  const { business, service, rules } = ctx;
+  const { business, services, rules } = ctx;
+  const bundle = buildServiceBundle(services);
   const timeZone = business.timezone;
 
   const phone = normalizePhone(
@@ -62,26 +65,25 @@ export async function createAnyBooking(
     business.location?.countryCode ?? "AL",
   );
   if (!phone.valid) {
-    return { ok: false, code: "invalid-phone", error: "Enter a valid phone number." };
+    return { ok: false, code: BookingFailureCode.INVALID_PHONE, error: "Enter a valid phone number." };
   }
 
   const startsAt = input.startsAt;
-  const endsAt = new Date(startsAt.getTime() + service.durationMin * 60_000);
+  const endsAt = new Date(startsAt.getTime() + bundle.totalDurationMin * 60_000);
   const now = new Date();
 
   const candidates = await loadActiveResources(input.businessId);
   if (candidates.length === 0) {
     return {
       ok: false,
-      code: "not-found",
+      code: BookingFailureCode.NOT_FOUND,
       error: "This service is no longer available.",
     };
   }
 
   // (b) Recompute live which candidates are actually free at this instant.
   const padMs =
-    (service.beforeBufferMin + service.afterBufferMin + MINUTES_PER_DAY) *
-    60_000;
+    (bundle.beforeBufferMin + bundle.afterBufferMin + MINUTES_PER_DAY) * 60_000;
   const busyStart = new Date(startsAt.getTime() - padMs);
   const busyEnd = new Date(endsAt.getTime() + padMs);
 
@@ -95,9 +97,9 @@ export async function createAnyBooking(
         resourceId: resource.id,
         startUtc: startsAt,
         timeZone,
-        durationMin: service.durationMin,
-        beforeBufferMin: service.beforeBufferMin,
-        afterBufferMin: service.afterBufferMin,
+        durationMin: bundle.totalDurationMin,
+        beforeBufferMin: bundle.beforeBufferMin,
+        afterBufferMin: bundle.afterBufferMin,
         rules,
         workingWindows,
         busy,
@@ -115,7 +117,7 @@ export async function createAnyBooking(
     // selection rather than dead-ending on a form error.
     return {
       ok: false,
-      code: "slot-taken",
+      code: BookingFailureCode.SLOT_TAKEN,
       error: "Sorry — that slot was just taken. Pick another time.",
     };
   }
@@ -146,14 +148,15 @@ export async function createAnyBooking(
         const row = await insertConfirmedBooking({
           businessId: business.id,
           resourceId: resource.id,
-          serviceId: service.id,
+          serviceId: bundle.items[0].serviceId, // primary (position 0)
+          services: bundle.items,
           customerName: input.customerName,
           customerPhone: phone.e164,
           customerEmail: input.customerEmail ?? null,
           startsAt,
           endsAt,
-          beforeBufferMin: service.beforeBufferMin,
-          afterBufferMin: service.afterBufferMin,
+          beforeBufferMin: bundle.beforeBufferMin,
+          afterBufferMin: bundle.afterBufferMin,
           manageToken: crypto.randomUUID(),
           idempotencyKey: input.idempotencyKey ?? null,
           notes: input.notes ?? null,
@@ -179,7 +182,7 @@ export async function createAnyBooking(
         console.error("[create-any-booking] insert failed:", e);
         return {
           ok: false,
-          code: "unknown",
+          code: BookingFailureCode.UNKNOWN,
           error: "Could not complete your booking. Please try again.",
         };
       }
@@ -189,7 +192,7 @@ export async function createAnyBooking(
   // (exhausted) every free candidate was taken out from under us.
   return {
     ok: false,
-    code: "slot-taken",
+    code: BookingFailureCode.SLOT_TAKEN,
     error: "Sorry — that slot was just taken. Pick another time.",
   };
 }

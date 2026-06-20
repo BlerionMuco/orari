@@ -2,6 +2,7 @@ import "server-only";
 import { MINUTES_PER_DAY } from "./constants";
 import { eachLocalDate, localPartsToUtc } from "./time";
 import { generateSlotsForResource } from "./availability";
+import { buildServiceBundle } from "./service-bundle";
 import {
   loadActiveResources,
   loadBusyIntervals,
@@ -14,7 +15,9 @@ import type { Slot } from "./types";
 export interface GetAvailableSlotsArgs {
   businessId: string;
   resourceId: string;
-  serviceId: string;
+  // The selected basket, in execution order (drives the block's leading/trailing
+  // buffers — never reorder before passing it here or to create).
+  serviceIds: string[];
   rangeStartDate: string; // business-local "YYYY-MM-DD", inclusive
   rangeEndDate: string; // business-local "YYYY-MM-DD", inclusive
   now?: Date; // injected UTC "now"; defaults to wall-clock now
@@ -25,20 +28,22 @@ export interface AvailableSlotsResult {
   slots: Slot[];
 }
 
-// Orchestrates the pure engine: load + tenant-validate context, fetch working
-// windows and busy intervals, then run `generateSlotsForResource`. Returns an
-// empty result (no throw) when the resource/service is missing or inactive.
+// Orchestrates the pure engine: load + tenant-validate context, aggregate the
+// basket into one block, fetch working windows + busy intervals, then run
+// `generateSlotsForResource`. Returns an empty result (no throw) when the
+// resource is missing/inactive or any requested service doesn't resolve.
 export async function getAvailableSlots(
   args: GetAvailableSlotsArgs,
 ): Promise<AvailableSlotsResult> {
   const ctx = await loadResourceContext(
     args.businessId,
     args.resourceId,
-    args.serviceId,
+    args.serviceIds,
   );
   if (!ctx) return { timezone: "UTC", slots: [] };
 
-  const { business, resource, service, rules } = ctx;
+  const { business, resource, services, rules } = ctx;
+  const bundle = buildServiceBundle(services);
   const timeZone = business.timezone;
   const now = args.now ?? new Date();
 
@@ -54,8 +59,7 @@ export async function getAvailableSlots(
     timeZone,
   ).utc;
   const padMs =
-    (service.beforeBufferMin + service.afterBufferMin + MINUTES_PER_DAY) *
-    60_000;
+    (bundle.beforeBufferMin + bundle.afterBufferMin + MINUTES_PER_DAY) * 60_000;
   const busyStart = new Date(rangeStartUtc.getTime() - padMs);
   const busyEnd = new Date(rangeEndUtc.getTime() + padMs);
 
@@ -68,9 +72,9 @@ export async function getAvailableSlots(
     resourceId: resource.id,
     isoDates,
     timeZone,
-    durationMin: service.durationMin,
-    beforeBufferMin: service.beforeBufferMin,
-    afterBufferMin: service.afterBufferMin,
+    durationMin: bundle.totalDurationMin,
+    beforeBufferMin: bundle.beforeBufferMin,
+    afterBufferMin: bundle.afterBufferMin,
     rules,
     workingWindows,
     busy,
@@ -82,14 +86,14 @@ export async function getAvailableSlots(
 
 export interface GetUnionAvailabilityArgs {
   businessId: string;
-  serviceId: string;
+  serviceIds: string[]; // execution order
   rangeStartDate: string; // business-local "YYYY-MM-DD", inclusive
   rangeEndDate: string; // business-local "YYYY-MM-DD", inclusive
   now?: Date;
 }
 
-// "Any available": the union of every active resource's open slots for a
-// service, deduped by start instant. Crucially this runs the SAME per-resource
+// "Any available": the union of every active resource's open slots for the
+// basket, deduped by start instant. Crucially this runs the SAME per-resource
 // loads as the single-resource path for EACH resource — its own working hours,
 // time-off and bookings — so a barber who's off on Monday contributes no Monday
 // slots. It must NOT collapse to one business-wide calendar. The deduped slot's
@@ -98,10 +102,11 @@ export interface GetUnionAvailabilityArgs {
 export async function getUnionAvailability(
   args: GetUnionAvailabilityArgs,
 ): Promise<AvailableSlotsResult> {
-  const ctx = await loadServiceContext(args.businessId, args.serviceId);
+  const ctx = await loadServiceContext(args.businessId, args.serviceIds);
   if (!ctx) return { timezone: "UTC", slots: [] };
 
-  const { business, service, rules } = ctx;
+  const { business, services, rules } = ctx;
+  const bundle = buildServiceBundle(services);
   const timeZone = business.timezone;
   const now = args.now ?? new Date();
 
@@ -117,8 +122,7 @@ export async function getUnionAvailability(
     timeZone,
   ).utc;
   const padMs =
-    (service.beforeBufferMin + service.afterBufferMin + MINUTES_PER_DAY) *
-    60_000;
+    (bundle.beforeBufferMin + bundle.afterBufferMin + MINUTES_PER_DAY) * 60_000;
   const busyStart = new Date(rangeStartUtc.getTime() - padMs);
   const busyEnd = new Date(rangeEndUtc.getTime() + padMs);
 
@@ -133,9 +137,9 @@ export async function getUnionAvailability(
         resourceId: resource.id,
         isoDates,
         timeZone,
-        durationMin: service.durationMin,
-        beforeBufferMin: service.beforeBufferMin,
-        afterBufferMin: service.afterBufferMin,
+        durationMin: bundle.totalDurationMin,
+        beforeBufferMin: bundle.beforeBufferMin,
+        afterBufferMin: bundle.afterBufferMin,
         rules,
         workingWindows,
         busy,

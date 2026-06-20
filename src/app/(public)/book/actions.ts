@@ -10,6 +10,7 @@ import {
   cancelBooking,
   type CancelBookingFailureCode,
 } from "@/lib/booking/cancel-booking";
+import type { CancelOutcome } from "@/lib/booking/booking-codes";
 
 export interface CreateBookingActionResult {
   error?: string;
@@ -57,7 +58,7 @@ export async function createBookingAction(
 export interface CancelBookingActionResult {
   error?: string;
   code?: CancelBookingFailureCode;
-  status?: "cancelled" | "already-cancelled";
+  status?: CancelOutcome;
 }
 
 export async function cancelBookingAction(

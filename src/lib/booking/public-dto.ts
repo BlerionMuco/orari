@@ -57,7 +57,11 @@ export interface PublicManageView {
     timezone: string;
     currency: string;
   };
+  // `service` is the primary (position-0) service, kept for back-compat;
+  // `services` is the full booked set in execution order, read from the
+  // booking_services snapshots (frozen at booking time, not live services).
   service: PublicService;
+  services: PublicService[];
   resource: PublicResource;
   booking: PublicBookingView;
 }

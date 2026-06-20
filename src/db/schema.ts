@@ -30,6 +30,19 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "no_show",
 ]);
 
+// Named access to the booking statuses. The TYPE is derived from the pgEnum so it
+// can't drift; `satisfies` keeps the values valid and the parity test in
+// __tests__ enforces exhaustiveness. Use BookingStatus.CONFIRMED in code instead
+// of the bare "confirmed" literal.
+export type BookingStatus = (typeof bookingStatusEnum.enumValues)[number];
+export const BookingStatus = {
+  HELD: "held",
+  CONFIRMED: "confirmed",
+  CANCELLED: "cancelled",
+  COMPLETED: "completed",
+  NO_SHOW: "no_show",
+} as const satisfies Record<string, BookingStatus>;
+
 export const memberRoleEnum = pgEnum("member_role", ["owner", "staff"]);
 
 export const resourceTypeEnum = pgEnum("resource_type", ["staff", "asset"]);
@@ -246,6 +259,48 @@ export const bookings = pgTable(
   ],
 );
 
+// One row per service in a (possibly multi-service) booking. The booking stays a
+// single contiguous time block — its starts_at/ends_at/buffers drive
+// `reserved_range` and the no-overlap constraint; this table records WHICH
+// services that block covers, in execution order. Columns are snapshotted at
+// creation (like the booking's buffers) so price/duration are immutable even if
+// the service is edited later. Invariant: the position-0 row's service_id equals
+// bookings.service_id (the primary service). `business_id` is denormalized from
+// the validated tenant context — never the client — because RLS trusts it.
+export const bookingServices = pgTable(
+  "booking_services",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    serviceId: uuid("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    durationMin: integer("duration_min").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    beforeBufferMin: integer("before_buffer_min").notNull().default(0),
+    afterBufferMin: integer("after_buffer_min").notNull().default(0),
+    position: integer("position").notNull(), // 0-based; 0 = primary service
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("booking_services_booking_idx").on(t.bookingId),
+    // Forbids the same service twice in one booking (distinct-services rule).
+    uniqueIndex("booking_services_booking_service_idx").on(
+      t.bookingId,
+      t.serviceId,
+    ),
+    index("booking_services_business_idx").on(t.businessId),
+  ],
+);
+
 // Booking rules, scoped by business with an optional per-service override
 // (NULL service_id = the business default). The engine resolves the
 // service-specific row first, then the business default, then code defaults.
@@ -309,5 +364,6 @@ export type WorkingHours = typeof workingHours.$inferSelect;
 export type TimeOff = typeof timeOff.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type BookingService = typeof bookingServices.$inferSelect;
 export type BookingRule = typeof bookingRules.$inferSelect;
 export type OutboxRow = typeof outbox.$inferSelect;

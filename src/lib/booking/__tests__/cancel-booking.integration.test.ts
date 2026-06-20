@@ -10,7 +10,9 @@ import {
   workingHours,
   bookingRules,
   bookings,
+  BookingStatus,
 } from "@/db/schema";
+import { CancelFailureCode, CancelOutcome } from "@/lib/booking/booking-codes";
 import { createBooking } from "@/lib/booking/create-booking";
 import { cancelBooking } from "@/lib/booking/cancel-booking";
 import { getAvailableSlots } from "@/lib/booking/get-available-slots";
@@ -85,7 +87,7 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
     const { slots } = await getAvailableSlots({
       businessId,
       resourceId,
-      serviceId,
+      serviceIds: [serviceId],
       rangeStartDate: target,
       rangeEndDate: target,
     });
@@ -97,7 +99,7 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
     return {
       businessId,
       resourceId,
-      serviceId,
+      serviceIds: [serviceId],
       startsAt,
       customerName: "Test Customer",
       customerPhone: "+355690000000",
@@ -115,7 +117,7 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
     expect(taken.ok).toBe(false);
 
     const cancelled = await cancelBooking(created.manageToken);
-    expect(cancelled).toEqual({ ok: true, status: "cancelled" });
+    expect(cancelled).toEqual({ ok: true, status: CancelOutcome.CANCELLED });
 
     // Freed: rebookable, with a new booking id.
     const rebooked = await createBooking(input(startsAt));
@@ -131,7 +133,10 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
     const once = await cancelBooking(created.manageToken);
     const twice = await cancelBooking(created.manageToken);
     expect(once.ok).toBe(true);
-    expect(twice).toEqual({ ok: true, status: "already-cancelled" });
+    expect(twice).toEqual({
+      ok: true,
+      status: CancelOutcome.ALREADY_CANCELLED,
+    });
   }, 20_000);
 
   it("rejects cancelling a past booking", async () => {
@@ -144,12 +149,12 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
       customerPhone: "+355690000000",
       startsAt: new Date("2020-01-06T09:00:00Z"),
       endsAt: new Date("2020-01-06T09:30:00Z"),
-      status: "confirmed",
+      status: BookingStatus.CONFIRMED,
       manageToken: token,
     });
     const res = await cancelBooking(token);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.code).toBe("too-late");
+    if (!res.ok) expect(res.code).toBe(CancelFailureCode.TOO_LATE);
   });
 
   it("rejects cancelling a completed booking", async () => {
@@ -162,17 +167,17 @@ describe.skipIf(!RUN)("cancelBooking (integration)", () => {
       customerPhone: "+355690000000",
       startsAt: new Date("2099-01-06T09:00:00Z"),
       endsAt: new Date("2099-01-06T09:30:00Z"),
-      status: "completed",
+      status: BookingStatus.COMPLETED,
       manageToken: token,
     });
     const res = await cancelBooking(token);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.code).toBe("not-cancellable");
+    if (!res.ok) expect(res.code).toBe(CancelFailureCode.NOT_CANCELLABLE);
   });
 
   it("returns not-found for an unknown token", async () => {
     const res = await cancelBooking(`missing-${crypto.randomUUID()}`);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.code).toBe("not-found");
+    if (!res.ok) expect(res.code).toBe(CancelFailureCode.NOT_FOUND);
   });
 });

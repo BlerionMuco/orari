@@ -3,6 +3,7 @@ import { asc, count, eq, gt, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   bookings,
+  bookingServices,
   bookingRules,
   businesses,
   outbox,
@@ -10,6 +11,7 @@ import {
   services,
   timeOff,
   workingHours,
+  BookingStatus,
   type Booking,
   type Business,
   type OutboxRow,
@@ -19,6 +21,7 @@ import {
 import { businessScope } from "@/lib/db/scoped";
 import { LocationSchema } from "@/lib/schemas/business";
 import { DEFAULT_BOOKING_RULES } from "./constants";
+import { combineRules } from "./service-bundle";
 import type { BookingRules, BusyInterval, WorkingWindow } from "./types";
 import type {
   PublicBusiness,
@@ -30,51 +33,89 @@ import type {
 const LocationOrNull = LocationSchema.nullable();
 
 // Statuses that occupy a slot (mirror the EXCLUDE constraint's WHERE).
-const LIVE_STATUSES = ["held", "confirmed"] as const;
+const LIVE_STATUSES = [BookingStatus.HELD, BookingStatus.CONFIRMED] as const;
 
 export interface ResourceContext {
   business: Business;
   resource: Resource;
-  service: Service;
-  rules: BookingRules;
+  // The selected services, reordered to match the requested id order (execution
+  // order); the engine aggregates them into one block via buildServiceBundle.
+  services: Service[];
+  rules: BookingRules; // combined (most-restrictive) across the services
 }
 
-// Business + service + rules without a specific resource — the shared context
+// Business + services + rules without a specific resource — the shared context
 // for the multi-resource ("any available") union and assignment paths, where the
 // resource is chosen across all active resources rather than given.
 export interface ServiceContext {
   business: Business;
-  service: Service;
-  rules: BookingRules;
+  services: Service[]; // requested order
+  rules: BookingRules; // combined across the services
 }
 
-// The booking_rules row for (business, service) wins over the business default
-// (service_id NULL); fall back to code defaults when neither exists.
-export async function resolveRules(
+// Resolve rules for a basket of services and combine them into the
+// most-restrictive set (see combineRules). Fetches the business's booking_rules
+// ONCE, then resolves each service in-memory (per-service override → business
+// default → code default), so N services cost one query, not N.
+export async function resolveRulesForServices(
   businessId: string,
-  serviceId: string,
+  serviceIds: string[],
 ): Promise<BookingRules> {
   const rows = await db
     .select()
     .from(bookingRules)
     .where(eq(bookingRules.businessId, businessId));
-  const forService = rows.find((r) => r.serviceId === serviceId);
   const businessDefault = rows.find((r) => r.serviceId === null);
-  const chosen = forService ?? businessDefault;
-  if (!chosen) {
-    // create_business seeds a business-default row, so reaching here means the
-    // invariant was bypassed (business inserted outside the RPC) — not normal.
-    console.warn(
-      `booking_rules missing for business ${businessId} (service ${serviceId}) — ` +
-        `using DEFAULT_BOOKING_RULES (invariant violation)`,
-    );
-    return DEFAULT_BOOKING_RULES;
-  }
-  return {
-    slotGranularityMin: chosen.slotGranularityMin,
-    leadTimeMin: chosen.leadTimeMin,
-    advanceWindowDays: chosen.advanceWindowDays,
+
+  const resolveOne = (serviceId: string): BookingRules => {
+    const forService = rows.find((r) => r.serviceId === serviceId);
+    const chosen = forService ?? businessDefault;
+    if (!chosen) {
+      console.warn(
+        `booking_rules missing for business ${businessId} (service ${serviceId}) — ` +
+          `using DEFAULT_BOOKING_RULES (invariant violation)`,
+      );
+      return DEFAULT_BOOKING_RULES;
+    }
+    return {
+      slotGranularityMin: chosen.slotGranularityMin,
+      leadTimeMin: chosen.leadTimeMin,
+      advanceWindowDays: chosen.advanceWindowDays,
+    };
   };
+
+  return combineRules(serviceIds.map(resolveOne));
+}
+
+// Load the requested active services, tenant-scoped, and return them in the
+// REQUESTED order (execution order drives the block's leading/trailing buffers).
+// Input ids are deduped first (preserving first-occurrence order). Returns null
+// if any requested id is missing / inactive / cross-tenant — the engine then
+// yields no slots and create rejects, never a partial basket.
+async function loadOrderedServices(
+  businessId: string,
+  serviceIds: string[],
+): Promise<Service[] | null> {
+  const orderedIds = [...new Set(serviceIds)];
+  if (orderedIds.length === 0) return null;
+
+  const scope = businessScope(businessId);
+  const rows = await db
+    .select()
+    .from(services)
+    .where(
+      scope.where(
+        "services",
+        inArray(services.id, orderedIds),
+        eq(services.active, true),
+      ),
+    );
+  if (rows.length !== orderedIds.length) return null;
+
+  const byId = new Map(rows.map((s) => [s.id, s]));
+  const ordered = orderedIds.map((id) => byId.get(id));
+  // Every id resolved (count matched + ids unique), so no undefined slips through.
+  return ordered.filter((s): s is Service => s !== undefined);
 }
 
 // Load and tenant-validate the business + resource + service for a booking. Any
@@ -82,7 +123,7 @@ export async function resolveRules(
 export async function loadResourceContext(
   businessId: string,
   resourceId: string,
-  serviceId: string,
+  serviceIds: string[],
 ): Promise<ResourceContext | null> {
   const [business] = await db
     .select()
@@ -102,17 +143,14 @@ export async function loadResourceContext(
     .limit(1);
   if (!resource) return null;
 
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(
-      scope.where("services", eq(services.id, serviceId), eq(services.active, true)),
-    )
-    .limit(1);
-  if (!service) return null;
+  const orderedServices = await loadOrderedServices(businessId, serviceIds);
+  if (!orderedServices) return null;
 
-  const rules = await resolveRules(businessId, serviceId);
-  return { business, resource, service, rules };
+  const rules = await resolveRulesForServices(
+    businessId,
+    orderedServices.map((s) => s.id),
+  );
+  return { business, resource, services: orderedServices, rules };
 }
 
 // Like loadResourceContext but resource-agnostic: validates business + active
@@ -120,7 +158,7 @@ export async function loadResourceContext(
 // missing / cross-tenant.
 export async function loadServiceContext(
   businessId: string,
-  serviceId: string,
+  serviceIds: string[],
 ): Promise<ServiceContext | null> {
   const [business] = await db
     .select()
@@ -129,18 +167,14 @@ export async function loadServiceContext(
     .limit(1);
   if (!business) return null;
 
-  const scope = businessScope(businessId);
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(
-      scope.where("services", eq(services.id, serviceId), eq(services.active, true)),
-    )
-    .limit(1);
-  if (!service) return null;
+  const orderedServices = await loadOrderedServices(businessId, serviceIds);
+  if (!orderedServices) return null;
 
-  const rules = await resolveRules(businessId, serviceId);
-  return { business, service, rules };
+  const rules = await resolveRulesForServices(
+    businessId,
+    orderedServices.map((s) => s.id),
+  );
+  return { business, services: orderedServices, rules };
 }
 
 // Active resource rows for a business (server-internal — never crossed to the
@@ -363,17 +397,28 @@ export async function loadBookingByManageToken(
     .from(businesses)
     .where(eq(businesses.id, booking.businessId))
     .limit(1);
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(scope.where("services", eq(services.id, booking.serviceId)))
-    .limit(1);
   const [resource] = await db
     .select()
     .from(resources)
     .where(scope.where("resources", eq(resources.id, booking.resourceId)))
     .limit(1);
-  if (!business || !service || !resource) return null;
+
+  // The booked services from the junction's frozen snapshots, in execution
+  // order — so the manage view shows exactly what was booked even after a
+  // service's price/name later changes.
+  const serviceRows = await db
+    .select()
+    .from(bookingServices)
+    .where(scope.where("bookingServices", eq(bookingServices.bookingId, booking.id)))
+    .orderBy(asc(bookingServices.position));
+
+  const bookedServices: PublicService[] = serviceRows.map((r) => ({
+    id: r.serviceId,
+    name: r.name,
+    durationMin: r.durationMin,
+    priceCents: r.priceCents,
+  }));
+  if (!business || !resource || bookedServices.length === 0) return null;
 
   return {
     business: {
@@ -382,7 +427,8 @@ export async function loadBookingByManageToken(
       timezone: business.timezone,
       currency: business.currency,
     },
-    service: toPublicService(service),
+    service: bookedServices[0],
+    services: bookedServices,
     resource: { id: resource.id, name: resource.name },
     booking: {
       id: booking.id,

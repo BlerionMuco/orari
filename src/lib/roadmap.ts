@@ -21,9 +21,10 @@ export interface RoadmapStats {
   percent: number;
 }
 
-export const V1_ROADMAP_UPDATED = "2026-06-16";
+export const V1_ROADMAP_UPDATED = "2026-06-20";
 // Core booking engine shipped (getAvailableSlots, booking-creation transaction,
-// timezone/DST) — see docs/v1/booking-engine.md.
+// timezone/DST) — see docs/v1/booking-engine.md. Public booking wizard wired
+// end-to-end (multi-service basket → real availability → confirmed booking).
 
 export const V1_ROADMAP: RoadmapGroup[] = [
   {
@@ -33,7 +34,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
       { label: "Route groups — (auth), (public), (dashboard)", status: "done" },
       { label: "Supabase clients + proxy session refresh", status: "done", note: "/auth/callback excluded from the proxy matcher so it doesn't double-write cookies during the recovery exchange" },
       { label: "Shared Zod schema pattern (src/lib/schemas)", status: "done" },
-      { label: "Schema + migrations — businesses, resources, services, bookings, profiles, memberships, invites, working_hours, time_off", status: "done" },
+      { label: "Schema + migrations — businesses, resources, services, bookings, booking_services, booking_rules, profiles, memberships, invites, working_hours, time_off", status: "done", note: "booking_services junction (0009) for multi-service bookings — RLS + idempotent backfill" },
       { label: "Double-booking exclusion constraint", status: "done" },
       { label: "business_id on every table + RLS policies", status: "done", note: "RLS on all tenant tables via memberships + current_user_business_ids()" },
       { label: "Subscription scaffold — status enum + trial_ends_at + entitlements stub", status: "todo" },
@@ -60,8 +61,8 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Core engine (build slowly, test hardest)",
     items: [
-      { label: "getAvailableSlots() — hours, time-off, buffers, lead time, advance window, rules", status: "done", note: "pure layered subtraction; split shifts + overnight + buffers; 32 unit tests" },
-      { label: "Booking-creation transaction — re-validate + rely on the exclusion constraint", status: "done", note: "confirm-only; reserved_range EXCLUDE wins the race (23P01); idempotency-key + transactional outbox; verified concurrent" },
+      { label: "getAvailableSlots() — hours, time-off, buffers, lead time, advance window, rules", status: "done", note: "pure layered subtraction; split shifts + overnight + buffers; multi-service basket (summed duration, first/last buffers, most-restrictive combined rules); unit-tested" },
+      { label: "Booking-creation transaction — re-validate + rely on the exclusion constraint", status: "done", note: "confirm-only; multi-service (one block + N booking_services rows in one tx, primary-service invariant); reserved_range EXCLUDE wins the race (23P01); idempotency-key + transactional outbox; verified concurrent + write proven against DB" },
       { label: "Timezone correctness — UTC storage, business-tz math, DST", status: "done", note: "@date-fns/tz; spring-forward gap skipped, fall-back earlier-occurrence, 23/25h days" },
     ],
   },
@@ -75,14 +76,14 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Public booking surface",
     items: [
-      { label: "Business public page (profile header, services list)", status: "partial", note: "route stub only" },
-      { label: "Service selection", status: "todo" },
-      { label: "Resource selection (skippable when only one)", status: "todo" },
-      { label: "Time picker — real availability + slot states + timezone label", status: "todo" },
-      { label: "Guest details form (name, phone, email — no account)", status: "todo" },
-      { label: "Confirmation screen", status: "todo" },
-      { label: "Manage-booking page via tokenized link (view / cancel / reschedule)", status: "todo" },
-      { label: "Error states — 404, business not found, no availability", status: "todo" },
+      { label: "Business public page (profile header, services list)", status: "done", note: "responsive booking wizard; mobile app-shell (sticky nav, dvh height chain)" },
+      { label: "Service selection (multi-select basket)", status: "done", note: "multi-service: pick >1 per booking; summed duration/price; Radix CheckboxCard" },
+      { label: "Resource selection (skippable when only one)", status: "done", note: "specific barber or 'Any available' (server-assigned); Radix RadioGroup" },
+      { label: "Time picker — real availability + slot states + timezone label", status: "done", note: "real /api/public/availability fetch (react-query); drag/swipe day strip; slots scroll in capped box" },
+      { label: "Guest details form (name, phone, email — no account)", status: "partial", note: "name + phone + note wired; email field not yet collected (engine accepts it)" },
+      { label: "Confirmation screen", status: "done", note: "success panel — code, summary, add-to-calendar (ICS); real createBookingAction" },
+      { label: "Manage-booking page via tokenized link (view / cancel / reschedule)", status: "todo", note: "BE ready (loadBookingByManageToken, cancelBooking/cancelBookingAction); no route/UI yet" },
+      { label: "Error states — 404, business not found, no availability", status: "done", note: "not-found route + empty-business + empty-day (jump-to-next); rate limiting still separate" },
     ],
   },
   {

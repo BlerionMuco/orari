@@ -22,6 +22,7 @@ const buttonVariants = cva(
         ghost: "bg-transparent text-text-muted hover:bg-fill-subtle",
       },
       size: {
+        lg: "h-[52px] rounded-[14px] px-5 text-[16px]",
         md: "h-[46px] px-4 text-[15px]",
         sm: "h-9 px-3 text-[13.5px]",
         icon: "h-11 w-11",
