@@ -6,7 +6,7 @@ import {
   GuestDetailsFields,
   type GuestDetailsValue,
 } from "../ui/guest-details-fields";
-import { StepShell } from "../ui/step-shell";
+import { StepShell } from "@/components/ui/wizard/step-shell";
 
 export function DetailsStep(): React.JSX.Element {
   const businessName = useBookingWizard((s) => s.business.name);
