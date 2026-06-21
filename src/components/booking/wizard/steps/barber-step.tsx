@@ -9,7 +9,7 @@ import {
   BarberOptionKind,
   type BarberOption,
 } from "../ui/barber-picker";
-import { StepShell } from "../ui/step-shell";
+import { StepShell } from "@/components/ui/wizard/step-shell";
 
 export function BarberStep(): React.JSX.Element {
   const businessId = useBookingWizard((s) => s.business.id);

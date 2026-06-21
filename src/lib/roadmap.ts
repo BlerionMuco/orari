@@ -21,10 +21,12 @@ export interface RoadmapStats {
   percent: number;
 }
 
-export const V1_ROADMAP_UPDATED = "2026-06-20";
+export const V1_ROADMAP_UPDATED = "2026-06-21";
 // Core booking engine shipped (getAvailableSlots, booking-creation transaction,
 // timezone/DST) — see docs/v1/booking-engine.md. Public booking wizard wired
 // end-to-end (multi-service basket → real availability → confirmed booking).
+// Onboarding completed: a 5-step wizard creates a fully bookable business
+// (services + shared hours + team + public slug) in one atomic RPC (0010).
 
 export const V1_ROADMAP: RoadmapGroup[] = [
   {
@@ -69,8 +71,8 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Onboarding",
     items: [
-      { label: "Onboarding wizard shell with step progress", status: "partial", note: "2-step wizard built; creates business via create_business RPC, which also seeds the business-default booking_rules row (0007)" },
-      { label: "Steps: profile → vertical → service → resource → hours → go-live (slug + URL)", status: "partial", note: "basics + team/owner-is-resource done; service, hours, go-live URL remain" },
+      { label: "Onboarding wizard shell with step progress", status: "done", note: "5-step wizard (Business → Services → Hours → Team → Go live) on RHF + zod; segmented progress + desktop checklist rail; atomic all-or-nothing create" },
+      { label: "Steps: profile → vertical → service → resource → hours → go-live (slug + URL)", status: "done", note: "all shipped: business basics + vertical, multi-service, shared weekly hours, team (owner + email invites), editable slug with live availability check; one SECURITY DEFINER RPC (create_business_onboarding, 0010) creates business + rules + resources + services + hours" },
     ],
   },
   {

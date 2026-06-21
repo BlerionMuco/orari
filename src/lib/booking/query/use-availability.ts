@@ -57,6 +57,11 @@ export function useAvailability(
   const query = useQuery({
     ...availabilityQueryOptions({ businessId, serviceIds, resourceId }),
     enabled: serviceIds.length > 0,
+    // Re-check on every (re)entry to the time step and on tab refocus, so a
+    // returning user sees current availability without a manual page refresh.
+    // (The barber-step prefetch still paints instantly; this refetches behind it.)
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     ...queryOptions,
   });
 

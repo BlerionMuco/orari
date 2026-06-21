@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useBookingWizard } from "../booking-wizard-store";
 import { ServicePicker } from "../ui/service-picker";
-import { StepShell } from "../ui/step-shell";
+import { StepShell } from "@/components/ui/wizard/step-shell";
 
 export function ServiceStep(): React.JSX.Element {
   const services = useBookingWizard((s) => s.services);

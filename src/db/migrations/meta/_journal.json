@@ -71,6 +71,13 @@
       "when": 1781906202441,
       "tag": "0009_milky_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0010_complete_onboarding",
+      "breakpoints": true
     }
   ]
 }

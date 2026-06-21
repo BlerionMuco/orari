@@ -4,7 +4,7 @@ import * as React from "react";
 import { useBookingWizard } from "../booking-wizard-store";
 import { useBookingSummary } from "../use-booking-summary";
 import { ReviewSummary } from "../ui/review-summary";
-import { StepShell } from "../ui/step-shell";
+import { StepShell } from "@/components/ui/wizard/step-shell";
 
 export function ReviewStep(): React.JSX.Element {
   const { rows, priceLabel } = useBookingSummary();

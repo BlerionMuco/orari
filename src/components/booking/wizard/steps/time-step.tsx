@@ -8,7 +8,7 @@ import { dayLabel } from "@/lib/booking/day-label";
 import { useBookingWizard, RESOURCE_ANY } from "../booking-wizard-store";
 import { useAvailability } from "@/lib/booking/query";
 import { useBookingSummary } from "../use-booking-summary";
-import { StepShell } from "../ui/step-shell";
+import { StepShell } from "@/components/ui/wizard/step-shell";
 import { TimeSummaryChip } from "../ui/time-summary-chip";
 import { DayStrip, DayStripSkeleton, type DayPill } from "../ui/day-strip";
 import { SlotGrid, type EmptyDayInfo, type SlotGroupView } from "../ui/slot-grid";
