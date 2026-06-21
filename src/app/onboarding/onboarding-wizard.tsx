@@ -10,6 +10,7 @@ import {
   VERTICAL_LABELS,
 } from "@/lib/schemas/onboarding";
 import { Vertical } from "@/lib/business/labels";
+import { defaultWeeklyHours } from "@/lib/onboarding/hours";
 import { createBusinessAction } from "@/app/onboarding/actions";
 import { Field } from "@/components/ui/form/field";
 import { Input } from "@/components/ui/form/input";
@@ -45,6 +46,9 @@ export function OnboardingWizard(): React.JSX.Element {
       timezone: "Europe/Tirane",
       ownerIsResource: true,
       team: [],
+      services: [],
+      hours: defaultWeeklyHours(),
+      slug: "",
     },
   });
 
@@ -58,8 +62,12 @@ export function OnboardingWizard(): React.JSX.Element {
   const submit = handleSubmit(async (values) => {
     setFormError("");
     const result = await createBusinessAction(values);
-    // On success the server action redirects; only an error returns here.
-    if (result?.error) setFormError(result.error);
+    if (!result.ok) {
+      setFormError(result.error);
+      return;
+    }
+    // Interim: the dedicated success screen lands in the onboarding UI phase.
+    window.location.assign("/dashboard");
   });
 
   return (
