@@ -24,7 +24,7 @@ export function ReviewSummary({
   return (
     <div
       className={cn(
-        "rounded-[16px] border border-border px-4.5",
+        "rounded-2xl border border-border px-4.5",
         tone === "surface" ? "bg-surface shadow-card" : "bg-bg",
         className,
       )}

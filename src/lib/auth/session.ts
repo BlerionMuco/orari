@@ -10,6 +10,8 @@ export interface CurrentBusiness {
   id: string;
   name: string;
   slug: string;
+  timezone: string;
+  currency: string;
   role: MemberRole;
 }
 
@@ -51,6 +53,8 @@ export async function getCurrentBusiness(
       id: businesses.id,
       name: businesses.name,
       slug: businesses.slug,
+      timezone: businesses.timezone,
+      currency: businesses.currency,
       role: memberships.role,
     })
     .from(memberships)

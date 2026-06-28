@@ -61,3 +61,28 @@ export const ResetPasswordInput = z
   });
 
 export type ResetPasswordInput = z.infer<typeof ResetPasswordInput>;
+
+// Dashboard "Account" — edits the operator's own profile name. Email change is
+// a Supabase auth flow (confirmation link to the new address); we expose it
+// separately rather than bundling.
+export const UpdateProfileInput = z.object({
+  fullName: z.string().min(1, "Enter your name.").max(120),
+});
+export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
+
+// Dashboard "Change password" — operator is already signed in, so we don't
+// require their current password (Supabase doesn't enforce it on updateUser).
+export const ChangePasswordInput = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters.")
+      .regex(/[A-Z]/, "Add at least one uppercase letter.")
+      .regex(/[0-9]/, "Add at least one number."),
+    confirmPassword: z.string().min(1, "Confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+export type ChangePasswordInput = z.infer<typeof ChangePasswordInput>;

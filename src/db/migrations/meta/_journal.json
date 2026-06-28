@@ -78,6 +78,20 @@
       "when": 1790000000000,
       "tag": "0010_complete_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1814400000000,
+      "tag": "0011_subscription_and_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1819900000000,
+      "tag": "0012_trial_ends_at_default",
+      "breakpoints": true
     }
   ]
 }
