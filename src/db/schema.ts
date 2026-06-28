@@ -48,6 +48,21 @@ export type MemberRole = (typeof memberRoleEnum.enumValues)[number];
 export const resourceTypeEnum = pgEnum("resource_type", ["staff", "asset"]);
 export type ResourceType = (typeof resourceTypeEnum.enumValues)[number];
 
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "trial",
+  "active",
+  "past_due",
+  "cancelled",
+]);
+export type SubscriptionStatus =
+  (typeof subscriptionStatusEnum.enumValues)[number];
+export const SubscriptionStatus = {
+  TRIAL: "trial",
+  ACTIVE: "active",
+  PAST_DUE: "past_due",
+  CANCELLED: "cancelled",
+} as const satisfies Record<string, SubscriptionStatus>;
+
 export const inviteStatusEnum = pgEnum("invite_status", [
   "pending",
   "accepted",
@@ -55,6 +70,12 @@ export const inviteStatusEnum = pgEnum("invite_status", [
   "revoked",
 ]);
 export type InviteStatus = (typeof inviteStatusEnum.enumValues)[number];
+export const InviteStatus = {
+  PENDING: "pending",
+  ACCEPTED: "accepted",
+  EXPIRED: "expired",
+  REVOKED: "revoked",
+} as const satisfies Record<string, InviteStatus>;
 
 // Mirror of the Supabase-managed auth.users row. The FK to auth.users(id) and
 // the AFTER INSERT trigger that populates this table live in raw SQL — Drizzle
@@ -87,6 +108,22 @@ export const businesses = pgTable(
     currency: text("currency").notNull().default("ALL"),
     // One typed place per business; validated by LocationSchema on every read.
     location: jsonb("location").$type<Location>(),
+    // Subscription scaffold (M4 migration 0011 + 0012). `trial_ends_at` has a
+    // DB default of `now() + interval '30 days'` so every new business starts
+    // a 30-day trial without the create flow needing to remember.
+    subscriptionStatus: subscriptionStatusEnum("subscription_status")
+      .notNull()
+      .default("trial"),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }).default(
+      sql`now() + interval '30 days'`,
+    ),
+    // Reminder preferences (M4 migration 0011). Offsets are minutes-before the
+    // booking start; the Inngest reminder job reads both columns.
+    reminderEnabled: boolean("reminder_enabled").notNull().default(true),
+    reminderOffsetsMin: integer("reminder_offsets_min")
+      .array()
+      .notNull()
+      .default(sql`'{1440}'::int[]`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

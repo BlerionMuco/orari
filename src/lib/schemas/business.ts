@@ -30,3 +30,22 @@ export const LocationSchema = z.object({
 });
 
 export type Location = z.infer<typeof LocationSchema>;
+
+// Dashboard "Business profile" form. Slug format is checked here; uniqueness
+// is enforced at the DB level + re-checked in the server action. Logo is a
+// URL (paste from Supabase Storage for V1; file-upload flow is a follow-up)
+// and is host-validated by `isAllowedLogoHost` at the action boundary.
+export const BusinessProfileFormInput = z.object({
+  name: z.string().min(1, "Name is required.").max(120),
+  slug: z
+    .string()
+    .min(3)
+    .max(40)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, hyphens."),
+  phone: z.string().max(40).optional().or(z.literal("")),
+  description: z.string().max(500).optional().or(z.literal("")),
+  logoUrl: z.string().url("Enter a full https URL.").optional().or(z.literal("")),
+  currency: z.string().regex(/^[A-Z]{3}$/, "ISO 4217 currency code (e.g. ALL, EUR)."),
+  location: LocationSchema.nullable().optional(),
+});
+export type BusinessProfileFormInput = z.infer<typeof BusinessProfileFormInput>;
