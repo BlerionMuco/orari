@@ -10,7 +10,7 @@ import { useAvailability } from "@/lib/booking/query";
 import { useBookingSummary } from "../use-booking-summary";
 import { StepShell } from "@/components/ui/wizard/step-shell";
 import { TimeSummaryChip } from "../ui/time-summary-chip";
-import { DayStrip, DayStripSkeleton, type DayPill } from "../ui/day-strip";
+import { DayStrip, DayStripSkeleton, type DayPill } from "@/components/ui/date/day-strip";
 import { SlotGrid, type EmptyDayInfo, type SlotGroupView } from "../ui/slot-grid";
 
 function domOf(iso: string): number {
