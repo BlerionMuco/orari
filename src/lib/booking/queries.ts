@@ -18,10 +18,11 @@ import {
   type Resource,
   type Service,
 } from "@/db/schema";
-import { businessScope } from "@/lib/db/scoped";
+import { businessScope, type BusinessScope } from "@/lib/db/scoped";
 import { LocationSchema } from "@/lib/schemas/business";
 import { DEFAULT_BOOKING_RULES } from "./constants";
 import { combineRules } from "./service-bundle";
+import { addDaysToIsoDate, localPartsToUtc } from "./time";
 import type { BookingRules, BusyInterval, WorkingWindow } from "./types";
 import type {
   PublicBusiness,
@@ -311,6 +312,198 @@ export async function findByIdempotencyKey(
     .select()
     .from(bookings)
     .where(scope.where("bookings", eq(bookings.idempotencyKey, key)))
+    .limit(1);
+  return row ?? null;
+}
+
+// --- Dashboard reads (authenticated owner / staff surface) ---
+
+// Day window in UTC for an ISO date interpreted in the business's timezone.
+// `localPartsToUtc(iso, 0, tz)` snaps to the local start-of-day instant; the
+// next-day start closes the half-open range. DST gaps don't apply at midnight in
+// any IANA zone we serve, so `existed` is implicit.
+function localDayRangeUtc(isoDate: string, timeZone: string): { from: Date; to: Date } {
+  const from = localPartsToUtc(isoDate, 0, timeZone).utc;
+  const to = localPartsToUtc(addDaysToIsoDate(isoDate, 1), 0, timeZone).utc;
+  return { from, to };
+}
+
+export interface DashboardBooking {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  status: BookingStatus;
+  notes: string | null;
+  resource: { id: string; name: string };
+  service: { id: string; name: string; durationMin: number; priceCents: number };
+}
+
+// Status set rendered on the dashboard. `held` is excluded — holds are reserved
+// for the deferred deposit flow and shouldn't surface in operator views yet.
+const DASHBOARD_STATUSES = [
+  BookingStatus.CONFIRMED,
+  BookingStatus.COMPLETED,
+  BookingStatus.NO_SHOW,
+  BookingStatus.CANCELLED,
+] as const;
+
+// List bookings whose START falls inside the local day (business tz), ordered
+// by start time. Optional resourceId scopes to a single resource — used by
+// staff (their own resource) and by the owner's resource filter chip.
+export async function listDayBookings(
+  scope: BusinessScope,
+  isoDate: string,
+  timeZone: string,
+  resourceId?: string,
+): Promise<DashboardBooking[]> {
+  const { from, to } = localDayRangeUtc(isoDate, timeZone);
+  const filters = [
+    inArray(bookings.status, [...DASHBOARD_STATUSES]),
+    gte(bookings.startsAt, from),
+    lt(bookings.startsAt, to),
+  ];
+  if (resourceId) filters.push(eq(bookings.resourceId, resourceId));
+
+  const rows = await db
+    .select({
+      id: bookings.id,
+      customerName: bookings.customerName,
+      customerPhone: bookings.customerPhone,
+      customerEmail: bookings.customerEmail,
+      startsAt: bookings.startsAt,
+      endsAt: bookings.endsAt,
+      status: bookings.status,
+      notes: bookings.notes,
+      resourceId: bookings.resourceId,
+      resourceName: resources.name,
+      serviceId: bookings.serviceId,
+      serviceName: services.name,
+      serviceDurationMin: services.durationMin,
+      servicePriceCents: services.priceCents,
+    })
+    .from(bookings)
+    .innerJoin(resources, eq(resources.id, bookings.resourceId))
+    .innerJoin(services, eq(services.id, bookings.serviceId))
+    .where(scope.where("bookings", ...filters))
+    .orderBy(asc(bookings.startsAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    customerName: r.customerName,
+    customerPhone: r.customerPhone,
+    customerEmail: r.customerEmail,
+    startsAt: r.startsAt,
+    endsAt: r.endsAt,
+    status: r.status,
+    notes: r.notes,
+    resource: { id: r.resourceId, name: r.resourceName },
+    service: {
+      id: r.serviceId,
+      name: r.serviceName,
+      durationMin: r.serviceDurationMin,
+      priceCents: r.servicePriceCents,
+    },
+  }));
+}
+
+// Resolve a booking by id, tenant-scoped, with the primary service + assigned
+// resource joined in one round-trip. Null when the id is missing / cross-tenant.
+export async function getBookingDetail(
+  scope: BusinessScope,
+  bookingId: string,
+): Promise<DashboardBooking | null> {
+  const [row] = await db
+    .select({
+      id: bookings.id,
+      customerName: bookings.customerName,
+      customerPhone: bookings.customerPhone,
+      customerEmail: bookings.customerEmail,
+      startsAt: bookings.startsAt,
+      endsAt: bookings.endsAt,
+      status: bookings.status,
+      notes: bookings.notes,
+      resourceId: bookings.resourceId,
+      resourceName: resources.name,
+      serviceId: bookings.serviceId,
+      serviceName: services.name,
+      serviceDurationMin: services.durationMin,
+      servicePriceCents: services.priceCents,
+    })
+    .from(bookings)
+    .innerJoin(resources, eq(resources.id, bookings.resourceId))
+    .innerJoin(services, eq(services.id, bookings.serviceId))
+    .where(scope.where("bookings", eq(bookings.id, bookingId)))
+    .limit(1);
+  if (!row) return null;
+  return {
+    id: row.id,
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    customerEmail: row.customerEmail,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    status: row.status,
+    notes: row.notes,
+    resource: { id: row.resourceId, name: row.resourceName },
+    service: {
+      id: row.serviceId,
+      name: row.serviceName,
+      durationMin: row.serviceDurationMin,
+      priceCents: row.servicePriceCents,
+    },
+  };
+}
+
+// Count of no-shows for this customer (matched by phone) within the caller's
+// business. Surfaces a "history" warning on the booking detail card. The
+// detail caller passes its own booking id so a booking already marked no-show
+// doesn't count itself in its own warning.
+export async function countNoShowsForCustomer(
+  scope: BusinessScope,
+  customerPhone: string,
+  excludeBookingId?: string,
+): Promise<number> {
+  if (!customerPhone) return 0;
+  const rows = await db
+    .select({ n: count() })
+    .from(bookings)
+    .where(
+      scope.where(
+        "bookings",
+        eq(bookings.customerPhone, customerPhone),
+        eq(bookings.status, BookingStatus.NO_SHOW),
+      ),
+    );
+  const total = Number(rows[0]?.n ?? 0);
+  if (!excludeBookingId) return total;
+  const [self] = await db
+    .select({ status: bookings.status })
+    .from(bookings)
+    .where(scope.where("bookings", eq(bookings.id, excludeBookingId)))
+    .limit(1);
+  return total - (self?.status === BookingStatus.NO_SHOW ? 1 : 0);
+}
+
+// Tenant-scoped resource for a signed-in staff user — used to scope Home /
+// Calendar / Booking detail when the role is "staff". Null when the user owns
+// no resource in this business (rare; show empty UI).
+export async function getResourceForUser(
+  scope: BusinessScope,
+  userId: string,
+): Promise<{ id: string; name: string } | null> {
+  const [row] = await db
+    .select({ id: resources.id, name: resources.name })
+    .from(resources)
+    .where(
+      scope.where(
+        "resources",
+        eq(resources.userId, userId),
+        eq(resources.active, true),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

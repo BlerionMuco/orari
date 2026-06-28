@@ -1,35 +1,64 @@
 import * as React from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getCurrentBusiness, getCurrentUser } from "@/lib/auth/session";
-import { signOut } from "@/lib/auth/actions";
+import { businessScope } from "@/lib/db/scoped";
+import { getResourceForUser, listDayBookings } from "@/lib/booking/queries";
+import { localIsoDate } from "@/lib/booking/time";
+import { BookingStatus } from "@/db/schema";
 import { Button } from "@/components/ui/buttons/button";
+import { ScreenState } from "@/components/ui/feedback/screen-state";
+import { HomeGreeting } from "@/components/dashboard/home/home-greeting";
+import { NextBookingCard } from "@/components/dashboard/home/next-booking-card";
+import { LaterTodayList } from "@/components/dashboard/home/later-today-list";
 
-export default async function DashboardPage(): Promise<React.JSX.Element> {
-  // The layout already gated these, so both are present here.
-  const user = await getCurrentUser();
-  const business = user ? await getCurrentBusiness(user.id) : null;
+// Layout already gated user + business, so the bangs here are safe and the
+// types stay precise without a redundant null check.
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const user = (await getCurrentUser())!;
+  const business = (await getCurrentBusiness(user.id))!;
+  const scope = businessScope(business.id);
+  const todayIso = localIsoDate(new Date(), business.timezone);
+
+  // Staff: scope every list to their resource. Owner: see all.
+  let resourceId: string | undefined;
+  if (business.role === "staff") {
+    const ownResource = await getResourceForUser(scope, user.id);
+    resourceId = ownResource?.id;
+  }
+
+  const todays = await listDayBookings(scope, todayIso, business.timezone, resourceId);
+  const live = todays.filter((b) => b.status === BookingStatus.CONFIRMED);
+  const nextBooking = live[0] ?? null;
+  const later = live.slice(1);
+  const meta = user.user_metadata ?? {};
+  const fullName = typeof meta.name === "string" ? meta.name : null;
+  const firstName = fullName ? fullName.split(" ")[0] : null;
 
   return (
-    <main className="flex-1 p-6 sm:p-8">
-      <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-text">
-              {business?.name ?? "Dashboard"}
-            </h1>
-            <p className="mt-1 text-[14px] text-text-muted">
-              Signed in as {user?.email}
-            </p>
-          </div>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Sign out
-            </Button>
-          </form>
+    <>
+      <HomeGreeting firstName={firstName} bookingsToday={todays.length} />
+      {nextBooking ? (
+        <NextBookingCard booking={nextBooking} timeZone={business.timezone} />
+      ) : (
+        <div className="rounded-[18px] border border-border bg-surface">
+          <ScreenState
+            kind="empty"
+            icon="calendar"
+            title="No bookings today"
+            body="When customers book, they show up here automatically."
+            action={
+              <Button asChild>
+                <Link href="/dashboard/new-booking">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Add booking
+                </Link>
+              </Button>
+            }
+          />
         </div>
-        <p className="text-text-muted">
-          Wire calendar, staff, services, customers here.
-        </p>
-      </div>
-    </main>
+      )}
+      <LaterTodayList bookings={later} timeZone={business.timezone} />
+    </>
   );
 }
