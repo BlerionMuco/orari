@@ -21,7 +21,7 @@ export interface RoadmapStats {
   percent: number;
 }
 
-export const V1_ROADMAP_UPDATED = "2026-06-28";
+export const V1_ROADMAP_UPDATED = "2026-06-29";
 // Core booking engine shipped (getAvailableSlots, booking-creation transaction,
 // timezone/DST) — see docs/v1/booking-engine.md. Public booking wizard wired
 // end-to-end (multi-service basket → real availability → confirmed booking).
@@ -39,7 +39,10 @@ export const V1_ROADMAP_UPDATED = "2026-06-28";
 // Invite accept (/invite/[token] → accept_invite RPC), Billing placeholder
 // reading the new subscription scaffold. Migration 0011 added subscription_
 // status enum + trial_ends_at + reminder_enabled + reminder_offsets_min; 0012
-// added trial_ends_at default + backfill.
+// added trial_ends_at default + backfill. Branded global error screens shipped:
+// root not-found (404), error boundary (500), global-error fallback, and the
+// staff 403 — one shared ErrorScreen + animated bezel/illustrations (lock /
+// compass / warning), all motion gated behind prefers-reduced-motion.
 
 export const V1_ROADMAP: RoadmapGroup[] = [
   {
@@ -116,7 +119,7 @@ export const V1_ROADMAP: RoadmapGroup[] = [
       { label: "Status transitions + basic no-show history", status: "done", note: "M1: BookingStatus state machine (confirmed → completed / no-show / cancelled) via mark-complete / mark-no-show / cancel-booking-scoped; countNoShowsForCustomer surfaces a flag on the detail page when prior no-shows exist" },
       { label: "Reminders settings (enable + offsets)", status: "done", note: "M4: reminder_enabled + reminder_offsets_min[] columns (0011) + form (off / 24h / 1h / both); read by future Inngest dispatcher" },
       { label: "Billing placeholder", status: "done", note: "M7: owner-only /dashboard/settings/billing; trial-status-card (status pill + days left + trial-ends date) + plan-stub (included features) + coming-soon-card; reads getSubscriptionState (0011/0012 scaffold); no write surface — Paddle/Lemon Squeezy out of V1" },
-      { label: "Restricted screen for staff-blocked routes", status: "done", note: "M1: server gate (role !== owner → redirect) + /dashboard/restricted with ScreenState lock variant" },
+      { label: "Restricted screen for staff-blocked routes", status: "done", note: "M1: server gate (role !== owner → redirect) + /dashboard/restricted, now the shared ErrorScreen 403 (lock illustration, embedded in the shell)" },
     ],
   },
   {
@@ -132,7 +135,8 @@ export const V1_ROADMAP: RoadmapGroup[] = [
   {
     title: "Cross-cutting UI",
     items: [
-      { label: "Empty states, loading skeletons, error boundaries", status: "done", note: "ScreenState (empty / error / loading / restricted variants) + Skeleton + StatusBadge primitives shipped in M0 and reused across every dashboard list / detail / settings view" },
+      { label: "Empty states, loading skeletons, error boundaries", status: "done", note: "ScreenState (empty / error / loading / restricted variants) + Skeleton + StatusBadge primitives shipped in M0 and reused across every dashboard list / detail / settings view; root error.tsx + global-error.tsx now back the runtime 500 boundary" },
+      { label: "Global error screens — 404 / 500 / 403", status: "done", note: "shared ErrorScreen + ErrorBezel (spinning dashed ring, pulse rings, drifting particles) + per-code illustration (lock / compass / warning); wired as root not-found.tsx (404), error.tsx + global-error.tsx (500), and /dashboard/restricted (403); colors map 1:1 to existing tokens, all orari-* motion gated behind prefers-reduced-motion" },
       { label: "Toast / confirm dialogs", status: "done", note: "Radix Toast (success / info / error, auto-dismiss) + Radix Dialog ConfirmDialog (danger variant, async resolve) mounted once in the dashboard layout; driven by Zustand stores (use-toast, use-confirm); danger confirm now solid-red bg" },
       { label: "Mobile layouts for all public screens", status: "done", note: "public booking wizard mobile-first (sticky nav, dvh chain); dashboard surface built mobile-first to 375px (sidebar md+ only; fixed bottom tab bar w/ safe-area inset on mobile; desktop locks h-dvh + scrolls in main, mobile uses body scroll)" },
       { label: "Accessibility pass (focus, labels, keyboard) on Radix components", status: "todo" },

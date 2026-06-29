@@ -53,6 +53,146 @@
   /* Elevation — the raised auth/card shadow */
   --shadow-card: 0 1px 2px rgba(26, 26, 23, 0.04),
     0 14px 34px -14px rgba(26, 26, 23, 0.12);
+
+  /*
+    Error-screen motion. Each token generates an `animate-orari-*` utility.
+    Keyframes are defined below (outside @theme) and all motion is disabled
+    under prefers-reduced-motion.
+  */
+  --animate-orari-rise: orari-rise 0.5s ease-out both;
+  --animate-orari-drift: orari-drift 9s ease-in-out infinite;
+  --animate-orari-float: orari-float 7s ease-in-out infinite;
+  --animate-orari-ring: orari-ring 2.8s ease-out infinite;
+  --animate-orari-spin: orari-spin 26s linear infinite;
+  --animate-orari-shake: orari-shake 4.5s ease-in-out infinite;
+  --animate-orari-shackle: orari-shackle 4.5s ease-in-out infinite;
+  --animate-orari-seek: orari-seek 6s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+  --animate-orari-bounce: orari-bounce 1.4s ease-in-out infinite;
+}
+
+@keyframes orari-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes orari-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(6px, -10px);
+  }
+  66% {
+    transform: translate(-8px, 6px);
+  }
+}
+@keyframes orari-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes orari-ring {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes orari-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes orari-shake {
+  0%,
+  72%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  76% {
+    transform: translateX(-5px) rotate(-4deg);
+  }
+  80% {
+    transform: translateX(5px) rotate(4deg);
+  }
+  84% {
+    transform: translateX(-4px) rotate(-3deg);
+  }
+  88% {
+    transform: translateX(4px) rotate(3deg);
+  }
+  92% {
+    transform: translateX(-2px) rotate(0);
+  }
+}
+@keyframes orari-shackle {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  80%,
+  90% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes orari-seek {
+  0% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(192deg);
+  }
+  25% {
+    transform: rotate(164deg);
+  }
+  45% {
+    transform: rotate(70deg);
+  }
+  55% {
+    transform: rotate(96deg);
+  }
+  75% {
+    transform: rotate(300deg);
+  }
+  85% {
+    transform: rotate(278deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes orari-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Respect reduced-motion: freeze every error-screen animation. */
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-orari"] {
+    animation: none !important;
+  }
 }
 
 /*
